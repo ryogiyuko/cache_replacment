@@ -70,7 +70,7 @@ module tree_LRU(
 
     always @( *) begin
     
-        case (r_flag_3[0])
+        case (r_nflag_3[0])
             1'b0:begin l=2'b10; m=2'b01; end
             1'b1:begin l=2'b01; m=2'b10; end 
             default: begin l=2'b00;m=2'b00; end
@@ -78,7 +78,7 @@ module tree_LRU(
     
         //t=0正常连接
         if (r_tree_linkway==0) begin
-            casez (r_flag_3)
+            casez (r_nflag_3)
                 3'bx11: begin ll = 4'b0001; end 
                 3'bx01: begin ll = 4'b0010; end
                 3'b1x0: begin ll = 4'b0100; end
@@ -86,7 +86,7 @@ module tree_LRU(
                 default: ll = 4'b0;
             endcase
 
-            casez (r_flag_3)
+            casez (r_nflag_3)
                 3'bx00: begin mm = 4'b0001; end 
                 3'bx10: begin mm = 4'b0010; end
                 3'b0x1: begin mm = 4'b0100; end
@@ -94,7 +94,7 @@ module tree_LRU(
                 default: mm = 4'b0;
             endcase
             
-            casez (r_flag_3)
+            casez (r_nflag_3)
                 3'bx01: begin lm = 4'b0001; end 
                 3'bx11: begin lm = 4'b0010; end
                 3'b0x0: begin lm = 4'b0100; end
@@ -102,7 +102,7 @@ module tree_LRU(
                 default: lm = 4'b0;
             endcase
 
-            casez (r_flag_3)
+            casez (r_nflag_3)
                 3'bx10: begin ml = 4'b0001; end 
                 3'bx00: begin ml = 4'b0010; end
                 3'b1x1: begin ml = 4'b0100; end
@@ -264,9 +264,62 @@ module tree_LRU(
         .i_freeNext3  ( w_selector1_free_mutex6  )
     );
     
-
     //node 2
+    wire w_selector2_drive_mutex3, w_selector2_free_mutex3;
+    wire w_selector2_drive_mutex4, w_selector2_free_mutex4;
+    wire w_selector2_drive_mutex5, w_selector2_free_mutex5;
+    wire w_selector2_drive_mutex6, w_selector2_free_mutex6;
 
+    cSelector4_cache selector2(
+        .rst          ( rst          ),
+        .i_drive      ( w_selector0_drive_selector2      ),
+        .o_free       ( w_selector0_free_selector2       ),
+
+        .o_fire       ( fire2       ),
+
+        .valid0       ( (~r_tree_linkway) & r_nflag_3[2]   ),   //r_tree_linkway = 0 正常连接
+        .valid1       ( (~r_tree_linkway) & (~r_nflag_3[2])    ),
+        .valid2       ( r_tree_linkway & r_nflag_3[1]     ),
+        .valid3       ( r_tree_linkway & (~r_nflag_3[1])     ),
+
+        .o_driveNext0 ( w_selector2_drive_mutex3 ),
+        .o_driveNext1 ( w_selector2_drive_mutex4 ),
+        .o_driveNext2 ( w_selector2_drive_mutex5 ),
+        .o_driveNext3 ( w_selector2_drive_mutex6 ),
+
+        .i_freeNext0  ( w_selector2_free_mutex3  ),
+        .i_freeNext1  ( w_selector2_free_mutex4  ),
+        .i_freeNext2  ( w_selector2_free_mutex5  ),
+        .i_freeNext3  ( w_selector2_free_mutex6  )
+    );
+
+    //node3
+    wire w_mutex3_drive_selector3, w_mutex3_free_selector3;
+    wire [2:0] w_mutex3_data_3;
+
+    cMutexMerge3_3b_cache mutex3(
+        .i_drive0    ( w_selector0_drive_mutex3   ),
+        .i_drive1    ( w_selector1_drive_mutex3   ),
+        .i_drive2    ( w_selector2_drive_mutex3   ),
+        .i_data0     ( 3'b001   ),  //node0
+        .i_data1     ( 3'b010   ),  //node1
+        .i_data2     ( 3'b100   ),  //node2
+
+        .i_freeNext  ( w_mutex3_free_selector3 ),
+        .rst         ( rst         ),
+        .o_free0     ( w_selector0_free_mutex3    ),
+        .o_free1     ( w_selector1_free_mutex3    ),
+        .o_free2     ( w_selector2_free_mutex3    ),
+        .o_driveNext ( w_mutex3_drive_selector3 ),
+        .o_data      ( w_mutex3_data_3     )
+    );
+    
+
+    //node4
+
+    //node5
+
+    //node6
 
 //输出
     assign buffer_out0 = lru_buffer[0];
