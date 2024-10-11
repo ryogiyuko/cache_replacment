@@ -53,8 +53,8 @@
 
 module tree_LRU(
     input rst,
-    input i_drive_treeLRU,
-    output o_free_treeLRU, 
+    input i_drive_treeLRU, i_freeNext,
+    output o_free_treeLRU, o_driveNext,
 
     input [6:0] i_hit_way_7,
     input i_hit_sig,
@@ -149,7 +149,7 @@ module tree_LRU(
     end
 
 //确定当前状态
-    reg [2:0] w_case_number; //one hot   未命中 or 命中0层 001，命中1层 010， 命中2层 100
+    reg [2:0] w_case_number; //one hot   case0 未命中 or 命中0层 001，case1 命中1层 010，case2 命中2层 100
     reg [1:0] w_upper_fire_2;//两位来管理下层能否触发上层  w_upper_fire_2，[2]控制 1层，[1]控制0层; case2时[0]=0，case3时[0]=[1]=0
 
     always @( *) begin
@@ -183,143 +183,263 @@ module tree_LRU(
 
 //LRUtree walk 遍历LRU树, 控制链 + fire
     wire fire6, fire5, fire4, fire3, fire2, fire1, fire0;
-    wire w_fire_to_dff0, w_fire_to_dff1, w_fire_to_dff2;
+    wire w_fire_to_buffer0, w_fire_to_buffer1, w_fire_to_buffer2;
     
-    assign w_fire_to_dff0 = fire1 & w_upper_fire_2[0];
-    assign w_fire_to_dff1 = ( fire3 | fire4 ) & w_upper_fire_2[1];
-    assign w_fire_to_dff2 = ( fire5 | fire6 ) & w_upper_fire_2[1];
+    assign w_fire_to_buffer0 = ( fire1 | fire2 ) & w_upper_fire_2[0];
+    assign w_fire_to_buffer1 = ( fire3 | fire4 ) & w_upper_fire_2[1];
+    assign w_fire_to_buffer2 = ( fire5 | fire6 ) & w_upper_fire_2[1];
 
     //控制链
     
-    //node 0
-    wire w_selector0_drive_selector1, w_selector0_free_selector1;
-    wire w_selector0_drive_selector2, w_selector0_free_selector2;
-    wire w_selector0_drive_mutex3, w_selector0_free_mutex3;
-    wire w_selector0_drive_mutex4, w_selector0_free_mutex4;
-    wire w_selector0_drive_mutex5, w_selector0_free_mutex5;
-    wire w_selector0_drive_mutex6, w_selector0_free_mutex6;
-    
-    cSelector6_cache selector0(
-        .rst          (rst          ),
-        .i_drive      ( i_drive_treeLRU      ),.o_free       ( o_free_treeLRU       ),
+        //node 0
+            wire w_selector0_drive_selector1, w_selector0_free_selector1;
+            wire w_selector0_drive_selector2, w_selector0_free_selector2;
+            wire w_selector0_drive_leafFifo, w_selector0_free_leafFifo;
+            
+            cSelector3_cache selector0(
+                .rst          (rst          ),
+                .i_drive      ( i_drive_treeLRU      ),.o_free       ( o_free_treeLRU       ),
+                .o_fire       ( fire0       ),       //用于 r_nflag_3 更新
 
-        .o_fire       ( fire0       ),       //用于 r_nflag_3 更新
+                .valid0       ( ( w_case_number[0] | w_case_number[1] ) & r_flag_3[0] ),  //不使用 r_nflag_3，因为该selector的fire不能用于自身valid
+                .valid1       ( ( w_case_number[0] | w_case_number[1] ) & (~r_flag_3[0]) ), 
+                .valid2       ( w_case_number[2]       ),
 
-        .valid0       ( ( w_case_number[0] | w_case_number[1] ) & r_nflag_3[0] ),
-        .valid1       ( ( w_case_number[0] | w_case_number[1] ) & (~r_nflag_3[0]) ),
-        .valid2       ( i_hit_way_7[3]       ),
-        .valid3       ( i_hit_way_7[4]       ),
-        .valid4       ( i_hit_way_7[5]       ),
-        .valid5       ( i_hit_way_7[6]       ),
+                .o_driveNext0 ( w_selector0_drive_selector1 ),
+                .o_driveNext1 ( w_selector0_drive_selector2 ),
+                .o_driveNext2 ( w_selector0_drive_leafFifo  ),
 
-        .o_driveNext0 ( w_selector0_drive_selector1 ),
-        .o_driveNext1 ( w_selector0_drive_selector2 ),
-        .o_driveNext2 ( w_selector0_drive_mutex3 ),
-        .o_driveNext3 ( w_selector0_drive_mutex4 ),
-        .o_driveNext4 ( w_selector0_drive_mutex5 ),
-        .o_driveNext5 ( w_selector0_drive_mutex6 ),
-        .i_freeNext0  ( w_selector0_free_selector1  ),
-        .i_freeNext1  ( w_selector0_free_selector2  ),
-        .i_freeNext2  ( w_selector0_free_mutex3  ),
-        .i_freeNext3  ( w_selector0_free_mutex4  ),
-        .i_freeNext4  ( w_selector0_free_mutex5  ),
-        .i_freeNext5  ( w_selector0_free_mutex6  )
-    );
+                .i_freeNext0  ( w_selector0_free_selector1  ),
+                .i_freeNext1  ( w_selector0_free_selector2  ),
+                .i_freeNext2  ( w_selector0_free_leafFifo )
+            );
 
-    always @(posedge fire0 or negedge rst) begin
-        if (rst==0) begin
-            r_nflag_3 <= 3'b0;
-        end
-        else begin
-            r_nflag_3 <= r_flag_3;
-        end
-    end
+            always @(posedge fire0 or negedge rst) begin
+                if (rst==0) begin
+                    r_nflag_3 <= 3'b0;
+                end
+                else begin
+                    r_nflag_3 <= r_flag_3;
+                end
+            end
 
-    //node 1
-    wire w_selector1_drive_mutex3, w_selector1_free_mutex3;
-    wire w_selector1_drive_mutex4, w_selector1_free_mutex4;
-    wire w_selector1_drive_mutex5, w_selector1_free_mutex5;
-    wire w_selector1_drive_mutex6, w_selector1_free_mutex6;
+        //node 1
+            wire w_selector1_drive_mutex3, w_selector1_free_mutex3;
+            wire w_selector1_drive_mutex4, w_selector1_free_mutex4;
+            wire w_selector1_drive_mutex5, w_selector1_free_mutex5;
+            wire w_selector1_drive_mutex6, w_selector1_free_mutex6;
 
-    cSelector4_cache selector1(
-        .rst          ( rst          ),
-        .i_drive      ( w_selector0_drive_selector1      ),
-        .o_free       ( w_selector0_free_selector1       ),
+            cSelector4_cache selector1(
+                .rst          ( rst          ),
+                .i_drive      ( w_selector0_drive_selector1      ),
+                .o_free       ( w_selector0_free_selector1       ),
 
-        .o_fire       ( fire1       ),
+                .o_fire       ( fire1       ),
 
-        .valid0       ( (~r_tree_linkway) & r_nflag_3[1]   ),   //r_tree_linkway = 0 正常连接
-        .valid1       ( (~r_tree_linkway) & (~r_nflag_3[1])    ),
-        .valid2       ( r_tree_linkway & r_nflag_3[2]     ),
-        .valid3       ( r_tree_linkway & (~r_nflag_3[2])     ),
+                .valid0       ( (~r_tree_linkway) & r_nflag_3[1]   ),   //r_tree_linkway = 0 正常连接
+                .valid1       ( (~r_tree_linkway) & (~r_nflag_3[1])    ),
+                .valid2       ( r_tree_linkway & r_nflag_3[2]     ),
+                .valid3       ( r_tree_linkway & (~r_nflag_3[2])     ),
 
-        .o_driveNext0 ( w_selector1_drive_mutex3 ),
-        .o_driveNext1 ( w_selector1_drive_mutex4 ),
-        .o_driveNext2 ( w_selector1_drive_mutex5 ),
-        .o_driveNext3 ( w_selector1_drive_mutex6 ),
+                .o_driveNext0 ( w_selector1_drive_mutex3 ),
+                .o_driveNext1 ( w_selector1_drive_mutex4 ),
+                .o_driveNext2 ( w_selector1_drive_mutex5 ),
+                .o_driveNext3 ( w_selector1_drive_mutex6 ),
 
-        .i_freeNext0  ( w_selector1_free_mutex3  ),
-        .i_freeNext1  ( w_selector1_free_mutex4  ),
-        .i_freeNext2  ( w_selector1_free_mutex5  ),
-        .i_freeNext3  ( w_selector1_free_mutex6  )
-    );
-    
-    //node 2
-    wire w_selector2_drive_mutex3, w_selector2_free_mutex3;
-    wire w_selector2_drive_mutex4, w_selector2_free_mutex4;
-    wire w_selector2_drive_mutex5, w_selector2_free_mutex5;
-    wire w_selector2_drive_mutex6, w_selector2_free_mutex6;
+                .i_freeNext0  ( w_selector1_free_mutex3  ),
+                .i_freeNext1  ( w_selector1_free_mutex4  ),
+                .i_freeNext2  ( w_selector1_free_mutex5  ),
+                .i_freeNext3  ( w_selector1_free_mutex6  )
+            );
+        
+        //node 2
+            wire w_selector2_drive_mutex3, w_selector2_free_mutex3;
+            wire w_selector2_drive_mutex4, w_selector2_free_mutex4;
+            wire w_selector2_drive_mutex5, w_selector2_free_mutex5;
+            wire w_selector2_drive_mutex6, w_selector2_free_mutex6;
 
-    cSelector4_cache selector2(
-        .rst          ( rst          ),
-        .i_drive      ( w_selector0_drive_selector2      ),
-        .o_free       ( w_selector0_free_selector2       ),
+            cSelector4_cache selector2(
+                .rst          ( rst          ),
+                .i_drive      ( w_selector0_drive_selector2      ),
+                .o_free       ( w_selector0_free_selector2       ),
 
-        .o_fire       ( fire2       ),
+                .o_fire       ( fire2       ),
 
-        .valid0       ( (~r_tree_linkway) & r_nflag_3[2]   ),   //r_tree_linkway = 0 正常连接
-        .valid1       ( (~r_tree_linkway) & (~r_nflag_3[2])    ),
-        .valid2       ( r_tree_linkway & r_nflag_3[1]     ),
-        .valid3       ( r_tree_linkway & (~r_nflag_3[1])     ),
+                .valid0       ( (~r_tree_linkway) & r_nflag_3[2]   ),   //r_tree_linkway = 0 正常连接
+                .valid1       ( (~r_tree_linkway) & (~r_nflag_3[2])    ),
+                .valid2       ( r_tree_linkway & r_nflag_3[1]     ),
+                .valid3       ( r_tree_linkway & (~r_nflag_3[1])     ),
 
-        .o_driveNext0 ( w_selector2_drive_mutex3 ),
-        .o_driveNext1 ( w_selector2_drive_mutex4 ),
-        .o_driveNext2 ( w_selector2_drive_mutex5 ),
-        .o_driveNext3 ( w_selector2_drive_mutex6 ),
+                .o_driveNext0 ( w_selector2_drive_mutex3 ),
+                .o_driveNext1 ( w_selector2_drive_mutex4 ),
+                .o_driveNext2 ( w_selector2_drive_mutex5 ),
+                .o_driveNext3 ( w_selector2_drive_mutex6 ),
 
-        .i_freeNext0  ( w_selector2_free_mutex3  ),
-        .i_freeNext1  ( w_selector2_free_mutex4  ),
-        .i_freeNext2  ( w_selector2_free_mutex5  ),
-        .i_freeNext3  ( w_selector2_free_mutex6  )
-    );
+                .i_freeNext0  ( w_selector2_free_mutex3  ),
+                .i_freeNext1  ( w_selector2_free_mutex4  ),
+                .i_freeNext2  ( w_selector2_free_mutex5  ),
+                .i_freeNext3  ( w_selector2_free_mutex6  )
+            );
 
-    //node3
-    wire w_mutex3_drive_selector3, w_mutex3_free_selector3;
-    wire [2:0] w_mutex3_data_3;
+        //node3
+            wire w_mutex3_drive_fifo3, w_mutex3_free_fifo3;
+            wire [2:0] w_mutex3_data_3;
 
-    cMutexMerge3_3b_cache mutex3(
-        .i_drive0    ( w_selector0_drive_mutex3   ),
-        .i_drive1    ( w_selector1_drive_mutex3   ),
-        .i_drive2    ( w_selector2_drive_mutex3   ),
-        .i_data0     ( 3'b001   ),  //node0
-        .i_data1     ( 3'b010   ),  //node1
-        .i_data2     ( 3'b100   ),  //node2
+            cMutexMerge2_2b_cache mutex3(
+                .i_drive0    ( w_selector1_drive_mutex3   ),
+                .i_drive1    ( w_selector2_drive_mutex3   ),
+                .i_data0     ( 2'b01   ),  //node1
+                .i_data1     ( 2'b10   ),  //node2
 
-        .i_freeNext  ( w_mutex3_free_selector3 ),
-        .rst         ( rst         ),
-        .o_free0     ( w_selector0_free_mutex3    ),
-        .o_free1     ( w_selector1_free_mutex3    ),
-        .o_free2     ( w_selector2_free_mutex3    ),
-        .o_driveNext ( w_mutex3_drive_selector3 ),
-        .o_data      ( w_mutex3_data_3     )
-    );
-    
+                .i_freeNext  ( w_mutex3_free_fifo3 ),
+                .rst         ( rst         ),
+                .o_free0     ( w_selector1_free_mutex3    ),
+                .o_free1     ( w_selector2_free_mutex3    ),
+                .o_driveNext ( w_mutex3_drive_fifo3 ),
+                .o_data      ( w_mutex3_data_3     )
+            );
+            
+            wire w_fifo3_drive_lastMutex, w_fifo3_free_lastMutex;
 
-    //node4
+            cFifo1 Fifo3(
+                .i_drive     ( w_mutex3_drive_fifo3     ),
+                .i_freeNext  ( w_fifo3_free_lastMutex   ),
+                .rst         ( rst         ),
+                .o_free      ( w_mutex3_free_fifo3      ),
+                .o_driveNext ( w_fifo3_drive_lastMutex  ),
+                .o_fire_1    ( fire3    )
+            );
+        
+        //node4
+            wire w_mutex4_drive_fifo4, w_mutex4_free_fifo4;
+            wire [2:0] w_mutex4_data_3;
 
-    //node5
+            cMutexMerge2_2b_cache mutex4(
+                .i_drive0    ( w_selector1_drive_mutex4   ),
+                .i_drive1    ( w_selector2_drive_mutex4   ),
+                .i_data0     ( 2'b01   ),  //node1
+                .i_data1     ( 2'b10   ),  //node2
 
-    //node6
+                .i_freeNext  ( w_mutex4_free_fifo4 ),
+                .rst         ( rst         ),
+                .o_free0     ( w_selector1_free_mutex4    ),
+                .o_free1     ( w_selector2_free_mutex4    ),
+                .o_driveNext ( w_mutex4_drive_fifo4 ),
+                .o_data      ( w_mutex4_data_3     )
+            );
+            
+            wire w_fifo4_drive_lastMutex, w_fifo4_free_lastMutex;
+
+            cFifo1 Fifo4(
+                .i_drive     ( w_mutex4_drive_fifo4     ),
+                .i_freeNext  ( w_fifo4_free_lastMutex   ),
+                .rst         ( rst         ),
+                .o_free      ( w_mutex4_free_fifo4      ),
+                .o_driveNext ( w_fifo4_drive_lastMutex  ),
+                .o_fire_1    ( fire4    )
+            );
+
+        //node5
+            wire w_mutex5_drive_fifo5, w_mutex5_free_fifo5;
+            wire [2:0] w_mutex5_data_3;
+
+            cMutexMerge2_2b_cache mutex5(
+                .i_drive0    ( w_selector1_drive_mutex5   ),
+                .i_drive1    ( w_selector2_drive_mutex5   ),
+                .i_data0     ( 2'b01   ),  //node1
+                .i_data1     ( 2'b10   ),  //node2
+
+                .i_freeNext  ( w_mutex5_free_fifo5 ),
+                .rst         ( rst         ),
+                .o_free0     ( w_selector1_free_mutex5    ),
+                .o_free1     ( w_selector2_free_mutex5    ),
+                .o_driveNext ( w_mutex5_drive_fifo5 ),
+                .o_data      ( w_mutex5_data_3     )
+            );
+            
+            wire w_fifo5_drive_lastMutex, w_fifo5_free_lastMutex;
+
+            cFifo1 Fifo5(
+                .i_drive     ( w_mutex5_drive_fifo5     ),
+                .i_freeNext  ( w_fifo5_free_lastMutex   ),
+                .rst         ( rst         ),
+                .o_free      ( w_mutex5_free_fifo5      ),
+                .o_driveNext ( w_fifo5_drive_lastMutex  ),
+                .o_fire_1    ( fire5    )
+            );
+
+        //node6
+            wire w_mutex6_drive_fifo6, w_mutex6_free_fifo6;
+            wire [2:0] w_mutex6_data_3;
+
+            cMutexMerge2_2b_cache mutex6(
+                .i_drive0    ( w_selector1_drive_mutex6   ),
+                .i_drive1    ( w_selector2_drive_mutex6   ),
+                .i_data0     ( 2'b01   ),  //node1
+                .i_data1     ( 2'b10   ),  //node2
+
+                .i_freeNext  ( w_mutex6_free_fifo6 ),
+                .rst         ( rst         ),
+                .o_free0     ( w_selector1_free_mutex6    ),
+                .o_free1     ( w_selector2_free_mutex6    ),
+                .o_driveNext ( w_mutex6_drive_fifo6 ),
+                .o_data      ( w_mutex6_data_3     )
+            );
+            
+            wire w_fifo6_drive_lastMutex, w_fifo6_free_lastMutex;
+
+            cFifo1 Fifo6(
+                .i_drive     ( w_mutex6_drive_fifo6     ),
+                .i_freeNext  ( w_fifo6_free_lastMutex   ),
+                .rst         ( rst         ),
+                .o_free      ( w_mutex6_free_fifo6      ),
+                .o_driveNext ( w_fifo6_drive_lastMutex  ),
+                .o_fire_1    ( fire6    )
+            );
+
+        //leafFifo
+            wire w_leafFifo_drive_lastMutex, w_leafFifo_free_lastMutex;
+            wire leafFire;
+
+            cFifo1 leafFifo(
+                .i_drive     ( w_selector0_drive_leafFifo    ),
+                .i_freeNext  ( w_leafFifo_free_lastMutex   ),
+                .rst         ( rst         ),
+                .o_free      ( w_selector0_free_leafFifo      ),
+                .o_driveNext ( w_leafFifo_drive_lastMutex  ),
+                .o_fire_1    ( leafFire    )
+            );
+
+        //lastMutex
+        cMutexMerge5_5b u_cMutexMerge5_5b(
+            .i_drive0    ( w_fifo3_drive_lastMutex    ),
+            .i_drive1    ( w_fifo4_drive_lastMutex    ),
+            .i_drive2    ( w_fifo5_drive_lastMutex    ),
+            .i_drive3    ( w_fifo6_drive_lastMutex    ),
+            .i_drive4    ( w_leafFifo_drive_lastMutex    ),
+            .i_data0     ( 5'b00001     ),
+            .i_data1     ( 5'b00010     ),
+            .i_data2     ( 5'b00100     ),
+            .i_data3     ( 5'b01000     ),
+            .i_data4     ( 5'b10000     ),
+
+            .i_freeNext  ( i_freeNext  ),
+            .rst         ( rst         ),
+            .o_free0     ( w_fifo3_free_lastMutex     ),
+            .o_free1     ( w_fifo4_free_lastMutex     ),
+            .o_free2     ( w_fifo5_free_lastMutex     ),
+            .o_free3     ( w_fifo6_free_lastMutex     ),
+            .o_free4     ( w_leafFifo_free_lastMutex     ),
+            .o_driveNext ( o_driveNext ),
+            .o_data      (       )
+        );
+
+//buffer update 缓冲更新
+
+    //r_flag_3 更新
+
+    //lru_buffer 更新
+
 
 //输出
     assign buffer_out0 = lru_buffer[0];

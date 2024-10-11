@@ -7,7 +7,7 @@
 
 `timescale 1ns / 1ps
 
-module cSelector4_cache(//condfork,注意valid用o_fire结合触发器稳定住再输入
+module cSelector4_cache(//调低了w_driveNext0到o_driveNext的延时，请勿用本模块的fire决定valid！
     input       rst,         
     input       i_drive,
     output      o_free,
@@ -46,7 +46,7 @@ wire w_driveNext0,w_driveNext1;
 );
 
 //delay here must match the time of counter to change.
-(* dont_touch="true" *)delay8U outdelay0(.inR(w_fire), .outR(w_driveNext0), .rst(rst));
+(* dont_touch="true" *)delay2U outdelay0(.inR(w_fire), .outR(w_driveNext0), .rst(rst));
 
 //control signal
 assign o_driveNext0 = w_driveNext0 & valid0;
