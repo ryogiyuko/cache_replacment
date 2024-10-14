@@ -14,7 +14,7 @@ rst
  
 //input & output port
 input i_drive0, i_drive1, i_drive2, i_drive3, i_drive4;
-input [5:0] i_data0, i_data1, i_data2, i_data3, i_data4;
+input [4:0] i_data0, i_data1, i_data2, i_data3, i_data4;
 input i_freeNext;
 input rst;
 

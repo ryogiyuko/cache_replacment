@@ -51,6 +51,27 @@
 //          2层      [5]    [6]  [3]    [4]     
 //     
 
+//
+// if (rst==0) begin
+   
+// end
+// else begin
+    // case (w_case_number)
+    //     3'b001:begin
+            
+    //     end
+    //     3'b010:begin
+            
+    //     end
+    //     3'b100:begin
+            
+    //     end
+    //     default:begin
+            
+    //     end 
+    // endcase
+// end
+
 module tree_LRU(
     input rst,
     input i_drive_treeLRU, i_freeNext,
@@ -59,14 +80,19 @@ module tree_LRU(
     input [6:0] i_hit_way_7,
     input i_hit_sig,
     output [2:0] buffer_out0,buffer_out1,buffer_out2,buffer_out3,buffer_out4,buffer_out5,buffer_out6,buffer_out7
+    //buffer_out0恒为LRU位
+
     );
 
-    reg [2:0] lru_buffer [6:0]; //7个三位宽的reg  全0到全1索引缓存行
-    reg [2:0] r_flag_3, r_nflag_3, r_tree_linkway;  //标记兄弟节点LRU的位， 本次启动策略时标记位的备份 开始时更新 ,标记树连接
+    reg [2:0] lru_buffer [6:0]; //7个三位宽的reg  全0 到 全1-1 索引缓存行  
+    reg [2:0] r_flag_3, r_nflag_3;  //标记兄弟节点LRU的位， 本次启动策略时标记位的备份 开始时更新 ,
+    reg r_tree_linkway;//标记树连接 0正常 1交错
+    reg [1:0] r_floor_2; //到第几层, 对于 [1] ^ [0] = 1 第 层 , [1] ^ [0] = 0 第 层
 
 //确定节点的顺序
     reg [1:0] l, m; //one hot  [1] 01, [2] 10
     reg [3:0] ll, mm, lm, ml; //one hot   [3] 0001, [4] 0010, [5] 0100, [6] 1000
+    reg [2:0] w_lru_bufer_ll; //ll位的值
 
     always @( *) begin
     
@@ -79,78 +105,79 @@ module tree_LRU(
         //t=0正常连接
         if (r_tree_linkway==0) begin
             casez (r_nflag_3)
-                3'bx11: begin ll = 4'b0001; end 
-                3'bx01: begin ll = 4'b0010; end
-                3'b1x0: begin ll = 4'b0100; end
-                3'b0x0: begin ll = 4'b1000; end
-                default: ll = 4'b0;
+                3'b?11: begin ll = 4'b0001; w_lru_bufer_ll = lru_buffer[3]; end 
+                3'b?01: begin ll = 4'b0010; w_lru_bufer_ll = lru_buffer[4]; end
+                3'b1?0: begin ll = 4'b0100; w_lru_bufer_ll = lru_buffer[5]; end
+                3'b0?0: begin ll = 4'b1000; w_lru_bufer_ll = lru_buffer[6]; end
+                default:begin
+                  ll = 4'b0;w_lru_bufer_ll = 3'b0;
+                end 
             endcase
 
             casez (r_nflag_3)
-                3'bx00: begin mm = 4'b0001; end 
-                3'bx10: begin mm = 4'b0010; end
-                3'b0x1: begin mm = 4'b0100; end
-                3'b1x1: begin mm = 4'b1000; end
+                3'b?00: begin mm = 4'b0001; end 
+                3'b?10: begin mm = 4'b0010; end
+                3'b0?1: begin mm = 4'b0100; end
+                3'b1?1: begin mm = 4'b1000; end
                 default: mm = 4'b0;
             endcase
             
             casez (r_nflag_3)
-                3'bx01: begin lm = 4'b0001; end 
-                3'bx11: begin lm = 4'b0010; end
-                3'b0x0: begin lm = 4'b0100; end
-                3'b1x0: begin lm = 4'b1000; end
+                3'b?01: begin lm = 4'b0001; end 
+                3'b?11: begin lm = 4'b0010; end
+                3'b0?0: begin lm = 4'b0100; end
+                3'b1?0: begin lm = 4'b1000; end
                 default: lm = 4'b0;
             endcase
 
             casez (r_nflag_3)
-                3'bx10: begin ml = 4'b0001; end 
-                3'bx00: begin ml = 4'b0010; end
-                3'b1x1: begin ml = 4'b0100; end
-                3'b0x1: begin ml = 4'b1000; end
+                3'b?10: begin ml = 4'b0001; end 
+                3'b?00: begin ml = 4'b0010; end
+                3'b1?1: begin ml = 4'b0100; end
+                3'b0?1: begin ml = 4'b1000; end
                 default: ml = 4'b0;
             endcase
         end
 
         //t=1交错连接
         else begin
-            casez (r_flag_3)
-                3'bx10: begin ll = 4'b0001; end 
-                3'bx00: begin ll = 4'b0010; end
-                3'b1x1: begin ll = 4'b0100; end
-                3'b0x1: begin ll = 4'b1000; end
-                default: ll = 4'b0;
+            casez (r_nflag_3)
+                3'b?10: begin ll = 4'b0001; w_lru_bufer_ll = lru_buffer[3]; end 
+                3'b?00: begin ll = 4'b0010; w_lru_bufer_ll = lru_buffer[4]; end
+                3'b1?1: begin ll = 4'b0100; w_lru_bufer_ll = lru_buffer[5]; end
+                3'b0?1: begin ll = 4'b1000; w_lru_bufer_ll = lru_buffer[6]; end
+                default:begin ll = 4'b0; w_lru_bufer_ll = 3'b0; end
             endcase
 
-            casez (r_flag_3)
-                3'bx01: begin mm = 4'b0001; end 
-                3'bx11: begin mm = 4'b0010; end
-                3'b0x0: begin mm = 4'b0100; end
-                3'b1x0: begin mm = 4'b1000; end
+            casez (r_nflag_3)
+                3'b?01: begin mm = 4'b0001; end 
+                3'b?11: begin mm = 4'b0010; end
+                3'b0?0: begin mm = 4'b0100; end
+                3'b1?0: begin mm = 4'b1000; end
                 default: mm = 4'b0;
             endcase
             
-            casez (r_flag_3)
-                3'bx00: begin lm = 4'b0001; end 
-                3'bx10: begin lm = 4'b0010; end
-                3'b0x1: begin lm = 4'b0100; end
-                3'b1x1: begin lm = 4'b1000; end
+            casez (r_nflag_3)
+                3'b?00: begin lm = 4'b0001; end 
+                3'b?10: begin lm = 4'b0010; end
+                3'b0?1: begin lm = 4'b0100; end
+                3'b1?1: begin lm = 4'b1000; end
                 default: lm = 4'b0;
             endcase
 
-            casez (r_flag_3)
-                3'bx11: begin ml = 4'b0001; end 
-                3'bx01: begin ml = 4'b0010; end
-                3'b1x0: begin ml = 4'b0100; end
-                3'b0x0: begin ml = 4'b1000; end
+            casez (r_nflag_3)
+                3'b?11: begin ml = 4'b0001; end 
+                3'b?01: begin ml = 4'b0010; end
+                3'b1?0: begin ml = 4'b0100; end
+                3'b0?0: begin ml = 4'b1000; end
                 default: ml = 4'b0;
             endcase
         end 
-
     end
 
 //确定当前状态
     reg [2:0] w_case_number; //one hot   case0 未命中 or 命中0层 001，case1 命中1层 010，case2 命中2层 100
-    reg [1:0] w_upper_fire_2;//两位来管理下层能否触发上层  w_upper_fire_2，[2]控制 1层，[1]控制0层; case2时[0]=0，case3时[0]=[1]=0
+    //reg [1:0] w_upper_fire_2;//两位来管理下层能否触发上层  w_upper_fire_2，[2]控制 1层，[1]控制0层; case2时[0]=0，case3时[0]=[1]=0
 
     always @( *) begin
         case (i_hit_way_7)
@@ -165,29 +192,34 @@ module tree_LRU(
             default: w_case_number = 3'b0;
         endcase
         
-        case (w_case_number)
-            3'b001:begin
-              w_upper_fire_2 = 2'b11;
-            end
-            4'b010:begin
-              w_upper_fire_2 = 2'b10;
-            end
-            4'b100:begin
-              w_upper_fire_2 = 2'b00;
-            end
-            default:begin
-              w_upper_fire_2 = 2'b00;
-            end
-        endcase
+        // case (w_case_number)
+        //     3'b001:begin
+        //       w_upper_fire_2 = 2'b11;
+        //     end
+        //     4'b010:begin
+        //       w_upper_fire_2 = 2'b10;
+        //     end
+        //     4'b100:begin
+        //       w_upper_fire_2 = 2'b00;
+        //     end
+        //     default:begin
+        //       w_upper_fire_2 = 2'b00;
+        //     end
+        // endcase
     end
 
 //LRUtree walk 遍历LRU树, 控制链 + fire
     wire fire6, fire5, fire4, fire3, fire2, fire1, fire0;
     wire w_fire_to_buffer0, w_fire_to_buffer1, w_fire_to_buffer2;
-    
-    assign w_fire_to_buffer0 = ( fire1 | fire2 ) & w_upper_fire_2[0];
-    assign w_fire_to_buffer1 = ( fire3 | fire4 ) & w_upper_fire_2[1];
-    assign w_fire_to_buffer2 = ( fire5 | fire6 ) & w_upper_fire_2[1];
+    wire w_fire_to_buffer3, w_fire_to_buffer4, w_fire_to_buffer5, w_fire_to_buffer6;
+
+    //assign w_fire_to_buffer0 = ( fire1 | fire2 ) & w_upper_fire_2[0];
+    //assign w_fire_to_buffer1 = r_tree_linkway ? ( ( fire3 | fire4 ) & w_upper_fire_2[1] ) :  ( ( fire5 | fire6 ) & w_upper_fire_2[1] );
+    //assign w_fire_to_buffer2 = r_tree_linkway ? ( ( fire5 | fire6 ) & w_upper_fire_2[1] ) :  ( ( fire3 | fire4 ) & w_upper_fire_2[1] );
+    assign w_fire_to_buffer0 = ( fire1 | fire2 );
+    assign w_fire_to_buffer1 = fire1 | (r_tree_linkway ? ( fire3 | fire4 ) : ( fire5 | fire6 ));
+    assign w_fire_to_buffer2 = fire2 | (r_tree_linkway ? ( fire5 | fire6 ) : ( fire3 | fire4 ));
+
 
     //控制链
     
@@ -213,15 +245,6 @@ module tree_LRU(
                 .i_freeNext1  ( w_selector0_free_selector2  ),
                 .i_freeNext2  ( w_selector0_free_leafFifo )
             );
-
-            always @(posedge fire0 or negedge rst) begin
-                if (rst==0) begin
-                    r_nflag_3 <= 3'b0;
-                end
-                else begin
-                    r_nflag_3 <= r_flag_3;
-                end
-            end
 
         //node 1
             wire w_selector1_drive_mutex3, w_selector1_free_mutex3;
@@ -283,7 +306,7 @@ module tree_LRU(
 
         //node3
             wire w_mutex3_drive_fifo3, w_mutex3_free_fifo3;
-            wire [2:0] w_mutex3_data_3;
+            wire [1:0] w_mutex3_data_2;
 
             cMutexMerge2_2b_cache mutex3(
                 .i_drive0    ( w_selector1_drive_mutex3   ),
@@ -296,7 +319,7 @@ module tree_LRU(
                 .o_free0     ( w_selector1_free_mutex3    ),
                 .o_free1     ( w_selector2_free_mutex3    ),
                 .o_driveNext ( w_mutex3_drive_fifo3 ),
-                .o_data      ( w_mutex3_data_3     )
+                .o_data      ( w_mutex3_data_2    )
             );
             
             wire w_fifo3_drive_lastMutex, w_fifo3_free_lastMutex;
@@ -312,7 +335,7 @@ module tree_LRU(
         
         //node4
             wire w_mutex4_drive_fifo4, w_mutex4_free_fifo4;
-            wire [2:0] w_mutex4_data_3;
+            wire [1:0] w_mutex4_data_2;
 
             cMutexMerge2_2b_cache mutex4(
                 .i_drive0    ( w_selector1_drive_mutex4   ),
@@ -325,7 +348,7 @@ module tree_LRU(
                 .o_free0     ( w_selector1_free_mutex4    ),
                 .o_free1     ( w_selector2_free_mutex4    ),
                 .o_driveNext ( w_mutex4_drive_fifo4 ),
-                .o_data      ( w_mutex4_data_3     )
+                .o_data      ( w_mutex4_data_2     )
             );
             
             wire w_fifo4_drive_lastMutex, w_fifo4_free_lastMutex;
@@ -341,7 +364,7 @@ module tree_LRU(
 
         //node5
             wire w_mutex5_drive_fifo5, w_mutex5_free_fifo5;
-            wire [2:0] w_mutex5_data_3;
+            wire [1:0] w_mutex5_data_2;
 
             cMutexMerge2_2b_cache mutex5(
                 .i_drive0    ( w_selector1_drive_mutex5   ),
@@ -354,7 +377,7 @@ module tree_LRU(
                 .o_free0     ( w_selector1_free_mutex5    ),
                 .o_free1     ( w_selector2_free_mutex5    ),
                 .o_driveNext ( w_mutex5_drive_fifo5 ),
-                .o_data      ( w_mutex5_data_3     )
+                .o_data      ( w_mutex5_data_2     )
             );
             
             wire w_fifo5_drive_lastMutex, w_fifo5_free_lastMutex;
@@ -370,7 +393,7 @@ module tree_LRU(
 
         //node6
             wire w_mutex6_drive_fifo6, w_mutex6_free_fifo6;
-            wire [2:0] w_mutex6_data_3;
+            wire [1:0] w_mutex6_data_2;
 
             cMutexMerge2_2b_cache mutex6(
                 .i_drive0    ( w_selector1_drive_mutex6   ),
@@ -383,7 +406,7 @@ module tree_LRU(
                 .o_free0     ( w_selector1_free_mutex6    ),
                 .o_free1     ( w_selector2_free_mutex6    ),
                 .o_driveNext ( w_mutex6_drive_fifo6 ),
-                .o_data      ( w_mutex6_data_3     )
+                .o_data      ( w_mutex6_data_2     )
             );
             
             wire w_fifo6_drive_lastMutex, w_fifo6_free_lastMutex;
@@ -435,12 +458,173 @@ module tree_LRU(
         );
 
 //buffer update 缓冲更新
+    wire w_nowFloor, fire_to_flag0, fire_to_flag1, fire_to_flag2, fire_to_floor;
+    assign w_nowFloor = r_floor_2[0] ^ r_floor_2[1];
 
     //r_flag_3 更新
+        
+        //0层
+            //r_nflag
+            always @(posedge fire0 or negedge rst) begin
+                if (rst==0) begin
+                    r_nflag_3 <= 3'b0;
+                    r_floor_2[0] <= 1'b0;
+                end
+                else begin
+                    r_nflag_3 <= r_flag_3;
+                    r_floor_2[0] <= ~r_floor_2[0];
+                end
+            end
+
+        //1层
+            //r_flag[0]
+            assign fire_to_flag0 = fire1 | fire2;
+
+            always @(posedge fire_to_flag0 or negedge rst) begin
+                if (rst==0) begin
+                    r_flag_3[0] <= 1'b0;
+                end
+                else begin
+                    case (w_case_number[1:0])
+                        2'b01:begin //case0
+                          r_flag_3[0] <= ~r_flag_3[0];  
+                        end
+                        2'b10:begin //case1
+                            //i_hit_way_7[2:1]，命中【1】 01，命中【2】 10
+                            if ( i_hit_way_7[2:1] == l)begin
+                                r_flag_3[0] <= ~r_flag_3[0];
+                            end  
+                        end
+                        default:begin end 
+                    endcase
+                end
+            end 
+
+        //2层
+            //r_flag[1]
+            assign fire_to_flag1 = fire3 | fire4 | leafFire;
+            always @(posedge fire_to_flag1 or negedge rst) begin
+                if (rst==0) begin
+                    r_flag_3[1] <= 1'b0;
+                end
+                else begin
+                    case (w_case_number)
+                        3'b001,3'b010:begin //fire3、fire4
+                          r_flag_3[1] <= ~r_flag_3[1];
+                        end
+                        3'b100:begin        //leafFire
+                          if ( i_hit_way_7[6:3] == ll && r_tree_linkway == 0) begin // t==0 时，fire3 fire4管理的 r_flag_3[1]才是R[L]
+                            r_flag_3[1] <= ~r_flag_3[1];
+                          end
+                          else if ( i_hit_way_7[6:3] == ml && r_tree_linkway == 1) begin // t==1 时，fire3 fire4管理的 r_flag_3[1]才是R[M]
+                            r_flag_3[1] <= ~r_flag_3[1];
+                          end
+                          else begin end
+                        end 
+                        default:begin end 
+                    endcase
+                end
+            end
+
+            //r_flag[2]
+            assign fire_to_flag2 = fire5 | fire6 | leafFire;
+            always @(posedge fire_to_flag2 or negedge rst) begin
+                if (rst==0) begin
+                    r_flag_3[2] <= 1'b0;
+                end
+                else begin
+                    case (w_case_number)
+                        3'b001,3'b010:begin //fire3、fire4
+                          r_flag_3[2] <= ~r_flag_3[2];
+                        end
+                        3'b100:begin        //leafFire
+                          if ( i_hit_way_7[6:3] == ll && r_tree_linkway == 1) begin // t==1 时，fire5 fire6管理的 r_flag_3[2]才是R[L]
+                            r_flag_3[2] <= ~r_flag_3[2];
+                          end
+                          else if ( i_hit_way_7[6:3] == ml && r_tree_linkway == 0) begin // t==0 时，fire5 fire6管理的 r_flag_3[2]才是R[M]
+                            r_flag_3[2] <= ~r_flag_3[2];
+                          end
+                          else begin end
+                        end 
+                        default:begin end 
+                    endcase
+                end
+            end
+
+            //r_floor[2]
+            assign fire_to_floor = fire3 | fire4 | fire5 | fire6 | leafFire;
+            always @(posedge fire_to_floor or negedge rst) begin  //这些fire不会同时来，可以 |
+                if (rst==0) begin
+                    r_floor_2[1] <= 1'b0;
+                end
+                else begin
+                    r_floor_2[1] <= ~r_floor_2[1];
+                end
+            end
+
+    //r_tree_linkway
+
 
     //lru_buffer 更新
 
+        //buffer0
+            always @(posedge w_fire_to_buffer0 or negedge rst) begin
+                if (rst==0) begin
+                    lru_buffer[0] <= 3'b000;
+                end
+                else begin
+                    case ({w_case_number[0],r_nflag_3[0]}) //仅case0时需要更改
+                        2'b11:begin
+                            lru_buffer[0] <= lru_buffer[1];
+                        end
+                        2'b10:begin
+                            lru_buffer[0] <= lru_buffer[2];
+                        end
+                        default: begin end
+                    endcase
+                end
+            end
 
+        //buffer1
+            always @(posedge w_fire_to_buffer1 or negedge rst) begin
+                if (rst==0) begin
+                    lru_buffer[1] <= 3'b000;
+                end
+                else begin
+                    if (w_nowFloor) begin
+                        lru_buffer[1] <= lru_buffer[0];
+                    end
+                    else begin
+                        lru_buffer[1] <= w_lru_bufer_ll;
+                    end
+                end
+            end
+
+        //buffer2
+            always @(posedge w_fire_to_buffer2 or negedge rst) begin
+                if (rst==0) begin
+                    lru_buffer[2] <= 3'b000;
+                end
+                else begin
+                    if (w_nowFloor) begin
+                        lru_buffer[2] <= lru_buffer[0];
+                    end
+                    else begin
+                        lru_buffer[2] <= w_lru_bufer_ll;
+                    end
+                end
+            end
+        
+        //buffer3
+            assign w_fire_to_buffer3 = fire3 | leafFire;
+            always @(posedge w_fire_to_buffer3 or negedge rst) begin
+                if (rst==0) begin
+                    lru_buffer[3] <= 3'b000;
+                end
+                else begin
+                    
+                end
+            end
 //输出
     assign buffer_out0 = lru_buffer[0];
     assign buffer_out1 = lru_buffer[1];

@@ -48,7 +48,7 @@ wire w_driveNext0,w_driveNext1;
 );
 
 //delay here must match the time of counter to change.
-(* dont_touch="true" *)delay2U outdelay0(.inR(w_fire), .outR(w_driveNext0), .rst(rst));
+(* dont_touch="true" *)delay4U outdelay0(.inR(w_fire), .outR(w_driveNext0), .rst(rst));
 
 //control signal
 assign o_driveNext0 = w_driveNext0 & valid0;

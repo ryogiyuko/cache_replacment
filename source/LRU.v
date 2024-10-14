@@ -50,15 +50,15 @@ module LRU(
 
     always @(posedge clk or negedge rst) begin
         if (rst==0) begin
-            lru_buffer[0] = 3'b000;lru_buffer[1] = 3'b001;lru_buffer[2] = 3'b010;lru_buffer[3] = 3'b011;
-            lru_buffer[4] = 3'b100;lru_buffer[5] = 3'b101;lru_buffer[6] = 3'b110;lru_buffer[7] = 3'b111;
+            lru_buffer[0] <= 3'b000;lru_buffer[1] <= 3'b001;lru_buffer[2] <= 3'b010;lru_buffer[3] <= 3'b011;
+            lru_buffer[4] <= 3'b100;lru_buffer[5] <= 3'b101;lru_buffer[6] <= 3'b110;lru_buffer[7] <= 3'b111;
         end
         else begin
             if (i_lru_write_enable) begin
-                lru_buffer[0] = lru_buffer_datain[0];lru_buffer[1] = lru_buffer_datain[1];
-                lru_buffer[2] = lru_buffer_datain[2];lru_buffer[3] = lru_buffer_datain[3];
-                lru_buffer[4] = lru_buffer_datain[4];lru_buffer[5] = lru_buffer_datain[5];
-                lru_buffer[6] = lru_buffer_datain[6];lru_buffer[7] = lru_buffer_datain[7]; 
+                lru_buffer[0] <= lru_buffer_datain[0];lru_buffer[1] <= lru_buffer_datain[1];
+                lru_buffer[2] <= lru_buffer_datain[2];lru_buffer[3] <= lru_buffer_datain[3];
+                lru_buffer[4] <= lru_buffer_datain[4];lru_buffer[5] <= lru_buffer_datain[5];
+                lru_buffer[6] <= lru_buffer_datain[6];lru_buffer[7] <= lru_buffer_datain[7]; 
             end
         end
     end
