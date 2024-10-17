@@ -25,7 +25,8 @@ module LRU(
     input [7:0] i_hit_way_8,
     input i_lru_write_enable, 
     input i_hit_sig,
-    output [2:0] buffer_out0,buffer_out1,buffer_out2,buffer_out3,buffer_out4,buffer_out5,buffer_out6,buffer_out7
+    output [2:0] buffer_out0,buffer_out1,buffer_out2,buffer_out3,buffer_out4,buffer_out5,buffer_out6,buffer_out7,
+    output [7:0] out_lru_flag  //onehot 哪个行是最LRU的
 );
     
     reg [2:0] lru_buffer [7:0]; //7个三位宽的reg  111 MRU  000 LRU
@@ -63,11 +64,20 @@ module LRU(
         end
     end
 
+    assign out_lru_flag[0] = ( lru_buffer[0] == 3'b000 ) ? 1'b1 : 1'b0;
+    assign out_lru_flag[1] = ( lru_buffer[1] == 3'b000 ) ? 1'b1 : 1'b0;
+    assign out_lru_flag[2] = ( lru_buffer[2] == 3'b000 ) ? 1'b1 : 1'b0;
+    assign out_lru_flag[3] = ( lru_buffer[3] == 3'b000 ) ? 1'b1 : 1'b0;
+    assign out_lru_flag[4] = ( lru_buffer[4] == 3'b000 ) ? 1'b1 : 1'b0;
+    assign out_lru_flag[5] = ( lru_buffer[5] == 3'b000 ) ? 1'b1 : 1'b0;
+    assign out_lru_flag[6] = ( lru_buffer[6] == 3'b000 ) ? 1'b1 : 1'b0;
+    assign out_lru_flag[7] = ( lru_buffer[7] == 3'b000 ) ? 1'b1 : 1'b0;
+
     genvar i;
     generate
         for ( i=0; i<8; i=i+1 ) begin :lru_algorithm
             assign lru_buffer_datahitin[i] = (i == w_encoder_3) ?  3'b111 : (( lru_buffer[i] > w_encoder_3 ) ?  (lru_buffer[i]-3'b001) : lru_buffer[i]);
-            assign lru_buffer_datamissin[i] = (lru_buffer[i] == 3'b000) ? 3'b111 : (lru_buffer[i]-3'b001) ;
+            assign lru_buffer_datamissin[i] = out_lru_flag[i] ? 3'b111 : (lru_buffer[i]-3'b001) ;
             // = i_hit_sig ? lru_buffer_datahitin[i] : lru_buffer_datamissin[i];
         end
     endgenerate
@@ -80,7 +90,6 @@ module LRU(
     assign buffer_out5 = lru_buffer[5];
     assign buffer_out6 = lru_buffer[6];
     assign buffer_out7 = lru_buffer[7];
-
 
     assign lru_buffer_datain[0] = i_hit_sig ? lru_buffer_datahitin[0] : lru_buffer_datamissin[0];
     assign lru_buffer_datain[1] = i_hit_sig ? lru_buffer_datahitin[1] : lru_buffer_datamissin[1];
