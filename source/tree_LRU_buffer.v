@@ -72,7 +72,7 @@
     // endcase
 // end
 
-module tree_LRU(
+module tree_LRU_buffer(
     input rst,
     input i_drive_treeLRU, i_freeNext,
     output o_free_treeLRU, o_driveNext,
@@ -82,13 +82,15 @@ module tree_LRU(
     input i_hit_sig,
     output [2:0] buffer_out0,buffer_out1,buffer_out2,buffer_out3,buffer_out4,buffer_out5,buffer_out6,buffer_out7
     //buffer_out0恒为LRU位
-
+    ,input [6:0] i_addr_7 //七位地址寻址128行
     );
 
+    reg [2:0] lru_buffer [6:0][127:0]; //7个三位宽的reg  全0 到 全1-1 索引缓存行  
+    reg [2:0] r_flag_3 [127:0];  //标记兄弟节点LRU的位， 
+    reg [127:0] r_tree_linkway;//标记树连接 0正常 1交错
+
     wire fire6, fire5, fire4, fire3, fire2, fire1, fire0, leafFire;
-    reg [2:0] lru_buffer [6:0]; //7个三位宽的reg  全0 到 全1-1 索引缓存行  
-    reg [2:0] r_flag_3, r_nflag_3;  //标记兄弟节点LRU的位， 本次启动策略时标记位的备份 开始时更新 ,
-    reg r_tree_linkway;//标记树连接 0正常 1交错
+    reg [2:0] r_nflag_3;  //本次启动策略时标记位的备份 开始时更新 
     reg [1:0] r_floor_2; //到第几层, 对于 [1] ^ [0] = 1 第 层 , [1] ^ [0] = 0 第 层
 
 //确定节点的顺序
@@ -223,8 +225,8 @@ module tree_LRU(
                 .i_drive      ( i_drive_treeLRU      ),.o_free       ( o_free_treeLRU       ),
                 .o_fire       ( fire0       ),       //用于 r_nflag_3 更新
 
-                .valid0       ( ( w_case_number[0] | w_case_number[1] ) & r_flag_3[0] ),  //不使用 r_nflag_3，因为该selector的fire不能用于自身valid
-                .valid1       ( ( w_case_number[0] | w_case_number[1] ) & (~r_flag_3[0]) ), 
+                .valid0       ( ( w_case_number[0] | w_case_number[1] ) & r_flag_3[0][i_addr_7] ),  //不使用 r_nflag_3，因为该selector的fire不能用于自身valid
+                .valid1       ( ( w_case_number[0] | w_case_number[1] ) & (~r_flag_3[0][i_addr_7]) ), 
                 .valid2       ( w_case_number[2]       ),
 
                 .o_driveNext0 ( w_selector0_drive_selector1 ),
@@ -249,10 +251,10 @@ module tree_LRU(
 
                 .o_fire       ( fire1       ),
 
-                .valid0       ( (~r_tree_linkway) & r_nflag_3[1]   ),   //r_tree_linkway = 0 正常连接
-                .valid1       ( (~r_tree_linkway) & (~r_nflag_3[1])    ),
-                .valid2       ( r_tree_linkway & r_nflag_3[2]     ),
-                .valid3       ( r_tree_linkway & (~r_nflag_3[2])     ),
+                .valid0       ( (~r_tree_linkway[i_addr_7]) & r_nflag_3[1]   ),   //r_tree_linkway = 0 正常连接
+                .valid1       ( (~r_tree_linkway[i_addr_7]) & (~r_nflag_3[1])    ),
+                .valid2       ( r_tree_linkway[i_addr_7] & r_nflag_3[2]     ),
+                .valid3       ( r_tree_linkway[i_addr_7] & (~r_nflag_3[2])     ),
 
                 .o_driveNext0 ( w_selector1_drive_mutex3 ),
                 .o_driveNext1 ( w_selector1_drive_mutex4 ),
@@ -278,10 +280,10 @@ module tree_LRU(
 
                 .o_fire       ( fire2       ),
 
-                .valid0       ( (~r_tree_linkway) & r_nflag_3[2]   ),   //r_tree_linkway = 0 正常连接
-                .valid1       ( (~r_tree_linkway) & (~r_nflag_3[2])    ),
-                .valid2       ( r_tree_linkway & r_nflag_3[1]     ),
-                .valid3       ( r_tree_linkway & (~r_nflag_3[1])     ),
+                .valid0       ( (~r_tree_linkway[i_addr_7]) & r_nflag_3[2]   ),   //r_tree_linkway = 0 正常连接
+                .valid1       ( (~r_tree_linkway[i_addr_7]) & (~r_nflag_3[2])    ),
+                .valid2       ( r_tree_linkway[i_addr_7] & r_nflag_3[1]     ),
+                .valid3       ( r_tree_linkway[i_addr_7] & (~r_nflag_3[1])     ),
 
                 .o_driveNext0 ( w_selector2_drive_mutex3 ),
                 .o_driveNext1 ( w_selector2_drive_mutex4 ),
@@ -456,6 +458,8 @@ module tree_LRU(
     assign leaf_writeEnable_hitlm = ll | ml;
     assign leaf_writeEnable_hitml = mm | lm;
 
+    integer i;
+
     //r_flag_3 更新
         
         //0层
@@ -465,7 +469,7 @@ module tree_LRU(
                     r_nflag_3 <= 3'b0;
                 end
                 else begin
-                    r_nflag_3 <= r_flag_3;
+                    r_nflag_3 <= r_flag_3[i_addr_7];
                 end
             end
 
@@ -474,19 +478,20 @@ module tree_LRU(
             assign fire_to_flag0 = fire1 | fire2;
             always @(posedge fire_to_flag0 or negedge rst) begin
                 if (rst==0) begin
-                    r_flag_3[0] <= 1'b0;
+                    for ( i=0 ;i<128 ;i=i+1 )
+                    r_flag_3[i][0] <= 1'b0;
                     r_floor_2[0] <= 1'b0;
                 end
                 else begin
                     r_floor_2[0] <= ~r_floor_2[0];
                     case (w_case_number[1:0])
                         2'b01:begin //case0
-                          r_flag_3[0] <= ~r_flag_3[0];  
+                          r_flag_3[i_addr_7][0] <= ~r_flag_3[i_addr_7][0];  
                         end
                         2'b10:begin //case1
                             //i_hit_way_7[2:1]，命中【1】 01，命中【2】 10
                             if ( (i_hit_way_7[2] & l[1]) | (i_hit_way_7[1] & l[0]) )begin   //按位与  10 & 01 = 00， 01 & 01 = 01；
-                                r_flag_3[0] <= ~r_flag_3[0];
+                                r_flag_3[i_addr_7][0] <= ~r_flag_3[i_addr_7][0];
                             end  
                         end
                         default:begin end 
@@ -499,19 +504,20 @@ module tree_LRU(
             assign fire_to_flag1 = fire3 | fire4 | leafFire;
             always @(posedge fire_to_flag1 or negedge rst) begin
                 if (rst==0) begin
-                    r_flag_3[1] <= 1'b0;
+                    for ( i=0 ;i<128 ;i=i+1 )
+                    r_flag_3[i][1] <= 1'b0;
                 end
                 else begin
                     case (w_case_number)
                         3'b001,3'b010:begin //fire3、fire4
-                          r_flag_3[1] <= ~r_flag_3[1];
+                          r_flag_3[i_addr_7][1] <= ~ r_flag_3[i_addr_7][1];
                         end
                         3'b100:begin        //leafFire
                           if ( hit_ll && (i_hit_way_7[3] | i_hit_way_7[4])) begin  //命中LL，且此时flag[1]管理的节点命中
-                            r_flag_3[1] <= ~r_flag_3[1];
+                            r_flag_3[i_addr_7][1] <= ~ r_flag_3[i_addr_7][1];
                           end
                           else if ( hit_ml && (i_hit_way_7[3] | i_hit_way_7[4])) begin 
-                            r_flag_3[1] <= ~r_flag_3[1];
+                            r_flag_3[i_addr_7][1] <= ~r_flag_3[i_addr_7][1];
                           end
                           else begin end
                         end 
@@ -524,19 +530,20 @@ module tree_LRU(
             assign fire_to_flag2 = fire5 | fire6 | leafFire;
             always @(posedge fire_to_flag2 or negedge rst) begin
                 if (rst==0) begin
-                    r_flag_3[2] <= 1'b0;
+                    for ( i=0 ;i<128 ;i=i+1 )
+                    r_flag_3[i][2] <= 1'b0;
                 end
                 else begin
                     case (w_case_number)
                         3'b001,3'b010:begin //fire5、fire6
-                          r_flag_3[2] <= ~r_flag_3[2];
+                          r_flag_3[i_addr_7][2] <= ~r_flag_3[i_addr_7][2];
                         end
                         3'b100:begin        //leafFire
                           if ( hit_ll && (i_hit_way_7[5] | i_hit_way_7[6]) ) begin 
-                            r_flag_3[2] <= ~r_flag_3[2];
+                            r_flag_3[i_addr_7][2] <= ~r_flag_3[i_addr_7][2];
                           end
                           else if ( hit_ml && (i_hit_way_7[5] | i_hit_way_7[6])) begin 
-                            r_flag_3[2] <= ~r_flag_3[2];
+                            r_flag_3[i_addr_7][2] <= ~r_flag_3[i_addr_7][2];
                           end
                           else begin end
                         end 
@@ -560,17 +567,18 @@ module tree_LRU(
         assign fire_to_treelink = fire1 | fire2 | leafFire;
         always @(posedge fire_to_treelink or negedge rst) begin
             if (rst==0) begin
-                r_tree_linkway <= 1'b0;
+                for ( i=0 ;i<128 ;i=i+1 )
+                r_tree_linkway[i] <= 1'b0;
             end
             else begin
                 case (w_case_number[2:1])
                     2'b01:begin
                       if ( (i_hit_way_7[2] & m[1]) | (i_hit_way_7[1] & m[0]) )
-                        r_tree_linkway <= ~r_tree_linkway;
+                        r_tree_linkway[i_addr_7] <= ~r_tree_linkway[i_addr_7];
                     end
                     2'b10:begin
                       if ( hit_ll || hit_lm ) 
-                        r_tree_linkway <= ~r_tree_linkway;
+                        r_tree_linkway[i_addr_7] <= ~r_tree_linkway[i_addr_7];
                     end 
                     default:begin end 
                 endcase
@@ -578,19 +586,20 @@ module tree_LRU(
         end
     
     //lru_buffer 更新
-
+    
         //buffer0
             always @(posedge w_fire_to_buffer0 or negedge rst) begin
                 if (rst==0) begin
-                    lru_buffer[0] <= 3'b000;
+                    for ( i=0 ;i<128 ;i=i+1 ) 
+                    lru_buffer[0][i] <= 3'b000;
                 end
                 else begin
                     case ({w_case_number[0],r_nflag_3[0]}) //仅case0时需要更改
                         2'b11:begin
-                            lru_buffer[0] <= lru_buffer[1];
+                            lru_buffer[0][i_addr_7] <= lru_buffer[1][i_addr_7];
                         end
                         2'b10:begin
-                            lru_buffer[0] <= lru_buffer[2];
+                            lru_buffer[0][i_addr_7] <= lru_buffer[2][i_addr_7];
                         end
                         default: begin end
                     endcase
@@ -599,48 +608,50 @@ module tree_LRU(
 
         //buffer1           
             always @( *) begin
-                casez ({r_tree_linkway, r_flag_3[2],r_flag_3[1]})
-                    3'b0?1: w_data_to_buffer1 = lru_buffer[3];
-                    3'b0?0: w_data_to_buffer1 = lru_buffer[4];
-                    3'b11?: w_data_to_buffer1 = lru_buffer[5];
-                    default: w_data_to_buffer1 = lru_buffer[6];
+                casez ({r_tree_linkway[i_addr_7], r_nflag_3[2],r_nflag_3[1]})
+                    3'b0?1: w_data_to_buffer1 = lru_buffer[3][i_addr_7];
+                    3'b0?0: w_data_to_buffer1 = lru_buffer[4][i_addr_7];
+                    3'b11?: w_data_to_buffer1 = lru_buffer[5][i_addr_7];
+                    default: w_data_to_buffer1 = lru_buffer[6][i_addr_7];
                 endcase
             end
 
             always @(posedge w_fire_to_buffer1 or negedge rst) begin
                 if (rst==0) begin
-                    lru_buffer[1] <= 3'b001;
+                    for ( i=0 ;i<128 ;i=i+1 )
+                    lru_buffer[1][i] <= 3'b001;
                 end
                 else begin
                     if (w_nowFloor==0 && w_case_number[0]) begin
-                        lru_buffer[1] <= lru_buffer[0];
+                        lru_buffer[1][i_addr_7] <= lru_buffer[0][i_addr_7];
                     end
                     else if(w_nowFloor==1)begin
-                        lru_buffer[1] <= w_data_to_buffer1;
+                        lru_buffer[1][i_addr_7] <= w_data_to_buffer1;
                     end
                 end
             end
 
         //buffer2
             always @( *) begin
-                casez ({r_tree_linkway, r_flag_3[2],r_flag_3[1]})
-                    3'b1?1: w_data_to_buffer2 = lru_buffer[3];
-                    3'b1?0: w_data_to_buffer2 = lru_buffer[4];
-                    3'b01?: w_data_to_buffer2 = lru_buffer[5];
-                    default: w_data_to_buffer2 = lru_buffer[6];
+                casez ({r_tree_linkway[i_addr_7], r_nflag_3[2],r_nflag_3[1]})
+                    3'b1?1: w_data_to_buffer2 = lru_buffer[3][i_addr_7];
+                    3'b1?0: w_data_to_buffer2 = lru_buffer[4][i_addr_7];
+                    3'b01?: w_data_to_buffer2 = lru_buffer[5][i_addr_7];
+                    default: w_data_to_buffer2 = lru_buffer[6][i_addr_7];
                 endcase
             end
 
             always @(posedge w_fire_to_buffer2 or negedge rst) begin
                 if (rst==0) begin
-                    lru_buffer[2] <= 3'b010;
+                    for ( i=0 ;i<128 ;i=i+1 )
+                    lru_buffer[2][i] <= 3'b010;
                 end
                 else begin
                     if (w_nowFloor==0 && w_case_number[0]) begin
-                        lru_buffer[2] <= lru_buffer[0];
+                        lru_buffer[2][i_addr_7] <= lru_buffer[0][i_addr_7];
                     end
                     else if(w_nowFloor==1)begin
-                        lru_buffer[2] <= w_data_to_buffer2;
+                        lru_buffer[2][i_addr_7] <= w_data_to_buffer2;
                     end
                 end
             end
@@ -649,15 +660,15 @@ module tree_LRU(
             always @( *) begin
                  if (hit_lm) begin
                     case (leaf_writeEnable_hitlm[3:2]) //只可能是不相邻的交换
-                        3'b01: w_data_to_buffer3 = lru_buffer[5];
-                        3'b10: w_data_to_buffer3 = lru_buffer[6];
+                        3'b01: w_data_to_buffer3 = lru_buffer[5][i_addr_7];
+                        3'b10: w_data_to_buffer3 = lru_buffer[6][i_addr_7];
                         default:begin end
                     endcase
                  end
                  else if (hit_ml) begin
                     case (leaf_writeEnable_hitml[3:2])
-                        3'b01: w_data_to_buffer3 = lru_buffer[5];
-                        3'b10: w_data_to_buffer3 = lru_buffer[6];
+                        3'b01: w_data_to_buffer3 = lru_buffer[5][i_addr_7];
+                        3'b10: w_data_to_buffer3 = lru_buffer[6][i_addr_7];
                         default:begin end
                     endcase
                  end
@@ -665,18 +676,19 @@ module tree_LRU(
 
             always @(posedge w_fire_to_buffer3 or negedge rst) begin
                 if (rst==0) begin
-                    lru_buffer[3] <= 3'b011;
+                    for ( i=0 ;i<128 ;i=i+1 )
+                    lru_buffer[3][i] <= 3'b011;
                 end
                 else begin
-                    case ({w_case_number,r_tree_linkway})
+                    case ({w_case_number,r_tree_linkway[i_addr_7]})
                         4'b0010, 4'b0100:begin
-                          lru_buffer[3] <= lru_buffer[1];
+                          lru_buffer[3][i_addr_7] <= lru_buffer[1][i_addr_7];
                         end
                         4'b0011, 4'b0101:begin
-                          lru_buffer[3] <= lru_buffer[2];
+                          lru_buffer[3][i_addr_7] <= lru_buffer[2][i_addr_7];
                         end
                         4'b1000, 4'b1001:begin
-                          lru_buffer[3] <= w_data_to_buffer3;
+                          lru_buffer[3][i_addr_7] <= w_data_to_buffer3;
                         end
                         default:begin end 
                     endcase
@@ -688,18 +700,19 @@ module tree_LRU(
 
             always @(posedge w_fire_to_buffer4 or negedge rst) begin
                 if (rst==0) begin
-                    lru_buffer[4] <= 3'b100;
+                    for ( i=0 ;i<128 ;i=i+1 )
+                    lru_buffer[4][i] <= 3'b100;
                 end
                 else begin
-                    case ({w_case_number,r_tree_linkway})
+                    case ({w_case_number,r_tree_linkway[i_addr_7]})
                         4'b0010, 4'b0100:begin
-                          lru_buffer[4] <= lru_buffer[1];
+                          lru_buffer[4][i_addr_7] <= lru_buffer[1][i_addr_7];
                         end
                         4'b0011, 4'b0101:begin
-                          lru_buffer[4] <= lru_buffer[2];
+                          lru_buffer[4][i_addr_7] <= lru_buffer[2][i_addr_7];
                         end
                         4'b1000, 4'b1001:begin
-                          lru_buffer[4] <= w_data_to_buffer4;
+                          lru_buffer[4][i_addr_7] <= w_data_to_buffer4[i_addr_7];
                         end
                         default:begin end 
                     endcase
@@ -710,15 +723,15 @@ module tree_LRU(
             always @( *) begin
                  if (hit_lm) begin
                     case (leaf_writeEnable_hitlm[1:0])
-                        3'b01: w_data_to_buffer5 = lru_buffer[3];
-                        3'b10: w_data_to_buffer5 = lru_buffer[4];
+                        3'b01: w_data_to_buffer5 = lru_buffer[3][i_addr_7];
+                        3'b10: w_data_to_buffer5 = lru_buffer[4][i_addr_7];
                         default:begin end
                     endcase
                  end
                  else if (hit_ml) begin
                     case (leaf_writeEnable_hitml[1:0])
-                        3'b01: w_data_to_buffer5 = lru_buffer[3];
-                        3'b10: w_data_to_buffer5 = lru_buffer[4];
+                        3'b01: w_data_to_buffer5 = lru_buffer[3][i_addr_7];
+                        3'b10: w_data_to_buffer5 = lru_buffer[4][i_addr_7];
                         default:begin end
                     endcase
                  end
@@ -726,18 +739,19 @@ module tree_LRU(
 
             always @(posedge w_fire_to_buffer5 or negedge rst) begin
                 if (rst==0) begin
-                    lru_buffer[5] <= 3'b101;
+                    for ( i=0 ;i<128 ;i=i+1 )
+                    lru_buffer[5][i] <= 3'b101;
                 end
                 else begin
-                    case ({w_case_number,r_tree_linkway})
+                    case ({w_case_number,r_tree_linkway[i_addr_7]})
                         4'b0010, 4'b0100:begin
-                          lru_buffer[5] <= lru_buffer[2];
+                          lru_buffer[5][i_addr_7] <= lru_buffer[2][i_addr_7];
                         end
                         4'b0011, 4'b0101:begin
-                          lru_buffer[5] <= lru_buffer[1];
+                          lru_buffer[5][i_addr_7] <= lru_buffer[1][i_addr_7];
                         end
                         4'b1000, 4'b1001:begin
-                          lru_buffer[5] <= w_data_to_buffer5;
+                          lru_buffer[5][i_addr_7] <= w_data_to_buffer5;
                         end
                         default:begin end 
                     endcase
@@ -749,18 +763,19 @@ module tree_LRU(
 
             always @(posedge w_fire_to_buffer6 or negedge rst) begin
                 if (rst==0) begin
-                    lru_buffer[6] <= 3'b110;
+                    for ( i=0 ;i<128 ;i=i+1 )
+                    lru_buffer[6][i] <= 3'b110;
                 end
                 else begin
-                    case ({w_case_number,r_tree_linkway})
+                    case ({w_case_number,r_tree_linkway[i_addr_7]})
                         4'b0010, 4'b0100:begin
-                          lru_buffer[6] <= lru_buffer[1];
+                          lru_buffer[6][i_addr_7] <= lru_buffer[1][i_addr_7];
                         end
                         4'b0011, 4'b0101:begin
-                          lru_buffer[6] <= lru_buffer[2];
+                          lru_buffer[6][i_addr_7] <= lru_buffer[2][i_addr_7];
                         end
                         4'b1000, 4'b1001:begin
-                          lru_buffer[6] <= w_data_to_buffer6;
+                          lru_buffer[6][i_addr_7] <= w_data_to_buffer6;
                         end
                         default:begin end 
                     endcase
@@ -768,13 +783,13 @@ module tree_LRU(
             end
 
 //输出
-    assign buffer_out0 = lru_buffer[0];
-    assign buffer_out1 = lru_buffer[1];
-    assign buffer_out2 = lru_buffer[2];
-    assign buffer_out3 = lru_buffer[3];
-    assign buffer_out4 = lru_buffer[4];
-    assign buffer_out5 = lru_buffer[5];
-    assign buffer_out6 = lru_buffer[6];
-    //assign buffer_out7 = lru_buffer[7];
+    assign buffer_out0 = lru_buffer[0][i_addr_7];
+    assign buffer_out1 = lru_buffer[1][i_addr_7];
+    assign buffer_out2 = lru_buffer[2][i_addr_7];
+    assign buffer_out3 = lru_buffer[3][i_addr_7];
+    assign buffer_out4 = lru_buffer[4][i_addr_7];
+    assign buffer_out5 = lru_buffer[5][i_addr_7];
+    assign buffer_out6 = lru_buffer[6][i_addr_7];
+    //assign buffer_out7 = lru_buffer[7][i_addr_7];
 
 endmodule
