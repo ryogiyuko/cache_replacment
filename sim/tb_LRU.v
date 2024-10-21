@@ -22,12 +22,12 @@ wire  [2:0]  buffer_out3                   ;
 wire  [2:0]  buffer_out4                   ;
 wire  [2:0]  buffer_out5                   ;
 wire  [2:0]  buffer_out6                   ;
-wire  [2:0]  buffer_out7                   ;
+//wire  [2:0]  buffer_out7                   ;
 
 
 initial
 begin
-    $sdf_annotate("/team/asc/zhong.jingye/zhongjingye/cache_replacement/DC/output/LRU.sdf",u_LRU); 
+    $sdf_annotate("/team/asc/zhong.jingye/zhongjingye/cache_replacement/DC/lru_40/output/LRU.sdf",u_LRU); 
 end
 
 initial
@@ -48,8 +48,8 @@ LRU  u_LRU (
     .buffer_out3             ( buffer_out3         [2:0] ),
     .buffer_out4             ( buffer_out4         [2:0] ),
     .buffer_out5             ( buffer_out5         [2:0] ),
-    .buffer_out6             ( buffer_out6         [2:0] ),
-    .buffer_out7             ( buffer_out7         [2:0] )
+    .buffer_out6             ( buffer_out6         [2:0] )
+    //,.buffer_out7             ( buffer_out7         [2:0] )
 );
 
 initial
