@@ -30,9 +30,13 @@ module cMutexMerge2_2b_fast #(
     generate
         for ( i=0 ; i<2 ; i=i+1 ) begin:
             //conTap
-            INV_X1M_A9TRULP_C40_W3 inv6 ( .A(w_Req[i]), .Z(reqNeg[i]) );
-            INV_X1M_A9TRULP_C40_W3 inv_for_rst ( .A(rst), .Y(Nrst[i]) );
-            DFFRPQ_X1M_A9TRULP_C40_W3 ffState ( .D(reqNeg[i]), .CK(w_Trig[i]), .RB(Nrst[i]), .Q(w_Req[i]) );
+            // INV_X1M_A9TRULP_C40_W3 inv6 ( .A(w_Req[i]), .Y(reqNeg[i]) );
+            // INV_X1M_A9TRULP_C40_W3 inv_for_rst ( .A(rst), .Y(Nrst[i]) );
+            // DFFRPQ_X1M_A9TRULP_C40_W3 ffState ( .D(reqNeg[i]), .CK(w_Trig[i]), .R(Nrst[i]), .Q(w_Req[i]) );
+            contTap Tap(
+            .trig(w_Trig[i]),
+            .req(w_Req[i]), .rst(rst)
+            );
             assign w_Trig[i] = i_drive[i] | w_free[i];
             //outfree
             assign o_free[i] = i_freeNext & w_Req[i];

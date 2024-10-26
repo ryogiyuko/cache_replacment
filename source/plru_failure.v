@@ -383,20 +383,633 @@ assign plru_update_onehot = utlb_plru_read_hit_vld ? plru_hit_onehot : plru_evic
   //控制链
     wire w_drive_update, w_free_update;
     wire [32-1:0] w_drive_mutex_update, w_free_mutex_update;
+    
 
     assign w_drive_update = utlb_plru_read_hit_vld ? i_drive_hit : w_mutex_evict_driveNext;
     assign o_free_hit = utlb_plru_read_hit_vld & w_free_update;
     assign w_mutex_evict_freeNext = ~utlb_plru_read_hit_vld & w_free_update;
 
-    genvar i,j;
+    genvar i;
     generate
         for ( i=0 ; i<32 ; i=i+1 ) begin
           assign w_drive_mutex_update[i] = update_num_onehot[i] & w_drive_update;
         end
     endgenerate
-    //assign w_free_update = | w_free_mutex_update;
+    assign w_free_update = | w_free_mutex_update;
+
+    //4层
+      wire[16-1:0] w_mutex4_drive_mutex3, w_mutex4_free_mutex3;
+      wire [16-1:0] w_mutex4_fire;
+      wire [32-1:0] w_mutex4_data;
+      
+      //控制链
+        cMutexMerge2_2b_fast u_cMutex_update_40(
+            .i_drive     ( w_drive_mutex_update[1:0] ),
+            .o_fire      ( w_mutex4_fire[0]      ),
+            .o_free      ( w_free_mutex_update[1:0]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[0]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[0]     ),
+            .o_data      ( w_mutex4_data[1:0]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_41(
+            .i_drive     ( w_drive_mutex_update[3:2] ),
+            .o_fire      ( w_mutex4_fire[1]      ),
+            .o_free      ( w_free_mutex_update[3:2]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[1]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[1]     ),
+            .o_data      ( w_mutex4_data[3:2]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_42(
+            .i_drive     ( w_drive_mutex_update[5:4] ),
+            .o_fire      ( w_mutex4_fire[2]      ),
+            .o_free      ( w_free_mutex_update[5:4]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[2]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[2]     ),
+            .o_data      ( w_mutex4_data[5:4]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_43(
+            .i_drive     ( w_drive_mutex_update[7:6] ),
+            .o_fire      ( w_mutex4_fire[3]      ),
+            .o_free      ( w_free_mutex_update[7:6]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[3]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[3]     ),
+            .o_data      ( w_mutex4_data[7:6]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_44(
+            .i_drive     ( w_drive_mutex_update[9:8] ),
+            .o_fire      ( w_mutex4_fire[4]      ),
+            .o_free      ( w_free_mutex_update[9:8]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[4]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[4]     ),
+            .o_data      ( w_mutex4_data[9:8]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_45(
+            .i_drive     ( w_drive_mutex_update[11:10] ),
+            .o_fire      ( w_mutex4_fire[5]      ),
+            .o_free      ( w_free_mutex_update[11:10]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[5]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[5]     ),
+            .o_data      ( w_mutex4_data[11:10]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_46(
+            .i_drive     ( w_drive_mutex_update[13:12] ),
+            .o_fire      ( w_mutex4_fire[6]      ),
+            .o_free      ( w_free_mutex_update[13:12]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[6]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[6]     ),
+            .o_data      ( w_mutex4_data[13:12]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_47(
+            .i_drive     ( w_drive_mutex_update[15:14] ),
+            .o_fire      ( w_mutex4_fire[7]      ),
+            .o_free      ( w_free_mutex_update[15:14]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[7]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[7]     ),
+            .o_data      ( w_mutex4_data[15:14]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_48(
+            .i_drive     ( w_drive_mutex_update[17:16] ),
+            .o_fire      ( w_mutex4_fire[8]      ),
+            .o_free      ( w_free_mutex_update[17:16]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[8]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[8]     ),
+            .o_data      ( w_mutex4_data[17:16]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_49(
+            .i_drive     ( w_drive_mutex_update[19:18] ),
+            .o_fire      ( w_mutex4_fire[9]      ),
+            .o_free      ( w_free_mutex_update[19:18]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[9]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[9]     ),
+            .o_data      ( w_mutex4_data[19:18]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_4a(
+            .i_drive     ( w_drive_mutex_update[21:20] ),
+            .o_fire      ( w_mutex4_fire[10]      ),
+            .o_free      ( w_free_mutex_update[21:20]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[10]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[10]     ),
+            .o_data      ( w_mutex4_data[21:20]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_4b(
+            .i_drive     ( w_drive_mutex_update[23:22] ),
+            .o_fire      ( w_mutex4_fire[11]      ),
+            .o_free      ( w_free_mutex_update[23:22]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[11]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[11]     ),
+            .o_data      ( w_mutex4_data[23:22]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_4c(
+            .i_drive     ( w_drive_mutex_update[25:24] ),
+            .o_fire      ( w_mutex4_fire[12]      ),
+            .o_free      ( w_free_mutex_update[25:24]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[12]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[12]     ),
+            .o_data      ( w_mutex4_data[25:24]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_4d(
+            .i_drive     ( w_drive_mutex_update[27:26] ),
+            .o_fire      ( w_mutex4_fire[13]      ),
+            .o_free      ( w_free_mutex_update[27:26]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[13]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[13]     ),
+            .o_data      ( w_mutex4_data[27:26]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_4e(
+            .i_drive     ( w_drive_mutex_update[29:28] ),
+            .o_fire      ( w_mutex4_fire[14]      ),
+            .o_free      ( w_free_mutex_update[29:28]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[14]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[14]     ),
+            .o_data      ( w_mutex4_data[29:28]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_4f(
+            .i_drive     ( w_drive_mutex_update[31:30] ),
+            .o_fire      ( w_mutex4_fire[15]      ),
+            .o_free      ( w_free_mutex_update[31:30]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex4_drive_mutex3[15]     ),
+            .i_freeNext  ( w_mutex4_free_mutex3[15]     ),
+            .o_data      ( w_mutex4_data[31:30]     )
+        );
+      
+      //寄存器
+        always @(posedge w_mutex4_fire[0] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p40 <= 1'b0;
+          else if(w_mutex4_data[0])
+            p40 <= 1'b1;
+          else if(w_mutex4_data[1])
+            p40 <= 1'b0;
+        end
+
+        always @(posedge w_mutex4_fire[1] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p41 <= 1'b0;
+          else if(w_mutex4_data[2])
+            p41 <= 1'b1;
+          else if(w_mutex4_data[3])
+            p41 <= 1'b0;
+        end
+
+        always @(posedge w_mutex4_fire[2] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p42 <= 1'b0;
+          else if(w_mutex4_data[4])
+            p42 <= 1'b1;
+          else if(w_mutex4_data[5])
+            p42 <= 1'b0;
+        end
+        
+        always @(posedge w_mutex4_fire[3] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p43 <= 1'b0;
+          else if(w_mutex4_data[6])
+            p43 <= 1'b1;
+          else if(w_mutex4_data[7])
+            p43 <= 1'b0;
+        end
+        always @(posedge w_mutex4_fire[4] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p44 <= 1'b0;
+          else if(w_mutex4_data[8])
+            p44 <= 1'b1;
+          else if(w_mutex4_data[9])
+            p44 <= 1'b0;
+        end
+        always @(posedge w_mutex4_fire[5] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p45 <= 1'b0;
+          else if(w_mutex4_data[10])
+            p45 <= 1'b1;
+          else if(w_mutex4_data[11])
+            p45 <= 1'b0;
+        end
+        always @(posedge w_mutex4_fire[6] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p46 <= 1'b0;
+          else if(w_mutex4_data[12])
+            p46 <= 1'b1;
+          else if(w_mutex4_data[13])
+            p46 <= 1'b0;
+        end
+        always @(posedge w_mutex4_fire[7] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p47 <= 1'b0;
+          else if(w_mutex4_data[14])
+            p47 <= 1'b1;
+          else if(w_mutex4_data[15])
+            p47 <= 1'b0;
+        end
+        always @(posedge w_mutex4_fire[8] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p48 <= 1'b0;
+          else if(w_mutex4_data[16])
+            p48 <= 1'b1;
+          else if(w_mutex4_data[17])
+            p48 <= 1'b0;
+        end
+        always @(posedge w_mutex4_fire[9] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p49 <= 1'b0;
+          else if(w_mutex4_data[18])
+            p49 <= 1'b1;
+          else if(w_mutex4_data[19])
+            p49 <= 1'b0;
+        end
+        always @(posedge w_mutex4_fire[10] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p4a <= 1'b0;
+          else if(w_mutex4_data[20])
+            p4a <= 1'b1;
+          else if(w_mutex4_data[21])
+            p4a <= 1'b0;
+        end
+        always @(posedge w_mutex4_fire[11] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p4b <= 1'b0;
+          else if(w_mutex4_data[22])
+            p4b <= 1'b1;
+          else if(w_mutex4_data[23])
+            p4b <= 1'b0;
+        end
+        always @(posedge w_mutex4_fire[12] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p4c <= 1'b0;
+          else if(w_mutex4_data[24])
+            p4c <= 1'b1;
+          else if(w_mutex4_data[25])
+            p4c <= 1'b0;
+        end
+        always @(posedge w_mutex4_fire[13] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p4d <= 1'b0;
+          else if(w_mutex4_data[26])
+            p4d <= 1'b1;
+          else if(w_mutex4_data[27])
+            p4d <= 1'b0;
+        end
+        always @(posedge w_mutex4_fire[14] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p4e <= 1'b0;
+          else if(w_mutex4_data[28])
+            p4e <= 1'b1;
+          else if(w_mutex4_data[29])
+            p4e <= 1'b0;
+        end
+        always @(posedge w_mutex4_fire[15] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p4f <= 1'b0;
+          else if(w_mutex4_data[30])
+            p4f <= 1'b1;
+          else if(w_mutex4_data[31])
+            p4f <= 1'b0;
+        end
     
-    
+    //3层
+      wire [8-1:0] w_mutex3_drive_mutex2, w_mutex3_free_mutex2;
+      wire [8-1:0] w_mutex3_fire;
+      wire [16-1:0] w_mutex3_data;
+
+      //control
+        cMutexMerge2_2b_fast u_cMutex_update_30(
+            .i_drive     ( w_mutex4_drive_mutex3[1:0] ),
+            .o_fire      ( w_mutex3_fire[0]      ),
+            .o_free      ( w_mutex4_free_mutex3[1:0]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex3_drive_mutex2[0]     ),
+            .i_freeNext  ( w_mutex3_free_mutex2[0]     ),
+            .o_data      ( w_mutex3_data[1:0]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_31(
+            .i_drive     ( w_mutex4_drive_mutex3[3:2] ),
+            .o_fire      ( w_mutex3_fire[1]      ),
+            .o_free      ( w_mutex4_free_mutex3[3:2]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex3_drive_mutex2[1]     ),
+            .i_freeNext  ( w_mutex3_free_mutex2[1]     ),
+            .o_data      ( w_mutex3_data[3:2]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_32(
+            .i_drive     ( w_mutex4_drive_mutex3[5:4] ),
+            .o_fire      ( w_mutex3_fire[2]      ),
+            .o_free      ( w_mutex4_free_mutex3[5:4]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex3_drive_mutex2[2]     ),
+            .i_freeNext  ( w_mutex3_free_mutex2[2]     ),
+            .o_data      ( w_mutex3_data[5:4]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_33(
+            .i_drive     ( w_mutex4_drive_mutex3[7:6] ),
+            .o_fire      ( w_mutex3_fire[3]      ),
+            .o_free      ( w_mutex4_free_mutex3[7:6]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex3_drive_mutex2[3]     ),
+            .i_freeNext  ( w_mutex3_free_mutex2[3]     ),
+            .o_data      ( w_mutex3_data[7:6]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_34(
+            .i_drive     ( w_mutex4_drive_mutex3[9:8] ),
+            .o_fire      ( w_mutex3_fire[4]      ),
+            .o_free      ( w_mutex4_free_mutex3[9:8]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex3_drive_mutex2[4]     ),
+            .i_freeNext  ( w_mutex3_free_mutex2[4]     ),
+            .o_data      ( w_mutex3_data[9:8]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_35(
+            .i_drive     ( w_mutex4_drive_mutex3[11:10] ),
+            .o_fire      ( w_mutex3_fire[5]      ),
+            .o_free      ( w_mutex4_free_mutex3[11:10]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex3_drive_mutex2[5]     ),
+            .i_freeNext  ( w_mutex3_free_mutex2[5]     ),
+            .o_data      ( w_mutex3_data[11:10]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_36(
+            .i_drive     ( w_mutex4_drive_mutex3[13:12] ),
+            .o_fire      ( w_mutex3_fire[6]      ),
+            .o_free      ( w_mutex4_free_mutex3[13:12]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex3_drive_mutex2[6]     ),
+            .i_freeNext  ( w_mutex3_free_mutex2[6]     ),
+            .o_data      ( w_mutex3_data[13:12]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_37(
+            .i_drive     ( w_mutex4_drive_mutex3[15:14] ),
+            .o_fire      ( w_mutex3_fire[7]      ),
+            .o_free      ( w_mutex4_free_mutex3[15:14]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex3_drive_mutex2[7]     ),
+            .i_freeNext  ( w_mutex3_free_mutex2[7]     ),
+            .o_data      ( w_mutex3_data[15:14]     )
+        );
+      
+      //flip flop
+        always @(posedge w_mutex3_fire[0] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p30 <= 1'b0;
+          else if(w_mutex3_data[0])
+            p30 <= 1'b1;
+          else if(w_mutex3_data[1])
+            p30 <= 1'b0;
+        end
+
+        always @(posedge w_mutex3_fire[1] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p31 <= 1'b0;
+          else if(w_mutex3_data[2])
+            p31 <= 1'b1;
+          else if(w_mutex3_data[3])
+            p31 <= 1'b0;
+        end
+
+        always @(posedge w_mutex3_fire[2] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p32 <= 1'b0;
+          else if(w_mutex3_data[4])
+            p32 <= 1'b1;
+          else if(w_mutex3_data[5])
+            p32 <= 1'b0;
+        end
+        
+        always @(posedge w_mutex3_fire[3] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p33 <= 1'b0;
+          else if(w_mutex3_data[6])
+            p33 <= 1'b1;
+          else if(w_mutex3_data[7])
+            p33 <= 1'b0;
+        end
+        always @(posedge w_mutex3_fire[4] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p34 <= 1'b0;
+          else if(w_mutex3_data[8])
+            p34 <= 1'b1;
+          else if(w_mutex3_data[9])
+            p34 <= 1'b0;
+        end
+        always @(posedge w_mutex3_fire[5] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p35 <= 1'b0;
+          else if(w_mutex3_data[10])
+            p35 <= 1'b1;
+          else if(w_mutex3_data[11])
+            p35 <= 1'b0;
+        end
+        always @(posedge w_mutex3_fire[6] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p36 <= 1'b0;
+          else if(w_mutex3_data[12])
+            p36 <= 1'b1;
+          else if(w_mutex3_data[13])
+            p36 <= 1'b0;
+        end
+        always @(posedge w_mutex3_fire[7] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p37 <= 1'b0;
+          else if(w_mutex3_data[14])
+            p37 <= 1'b1;
+          else if(w_mutex3_data[15])
+            p37 <= 1'b0;
+        end
+
+    //2层
+      wire [4-1:0] w_mutex2_drive_mutex1, w_mutex2_free_mutex1;
+      wire [4-1:0] w_mutex2_fire;
+      wire [8-1:0] w_mutex2_data;
+      
+      //control
+        cMutexMerge2_2b_fast u_cMutex_update_20(
+            .i_drive     ( w_mutex3_drive_mutex2[1:0] ),
+            .o_fire      ( w_mutex2_fire[0]      ),
+            .o_free      ( w_mutex3_free_mutex2[1:0]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex2_drive_mutex1[0]     ),
+            .i_freeNext  ( w_mutex2_free_mutex1[0]     ),
+            .o_data      ( w_mutex2_data[1:0]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_21(
+            .i_drive     ( w_mutex3_drive_mutex2[3:2] ),
+            .o_fire      ( w_mutex2_fire[1]      ),
+            .o_free      ( w_mutex3_free_mutex2[3:2]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex2_drive_mutex1[1]     ),
+            .i_freeNext  ( w_mutex2_free_mutex1[1]     ),
+            .o_data      ( w_mutex2_data[3:2]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_22(
+            .i_drive     ( w_mutex3_drive_mutex2[5:4] ),
+            .o_fire      ( w_mutex2_fire[2]      ),
+            .o_free      ( w_mutex3_free_mutex2[5:4]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex2_drive_mutex1[2]     ),
+            .i_freeNext  ( w_mutex2_free_mutex1[2]     ),
+            .o_data      ( w_mutex2_data[5:4]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_23(
+            .i_drive     ( w_mutex3_drive_mutex2[7:6] ),
+            .o_fire      ( w_mutex2_fire[3]      ),
+            .o_free      ( w_mutex3_free_mutex2[7:6]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex2_drive_mutex1[3]     ),
+            .i_freeNext  ( w_mutex2_free_mutex1[3]     ),
+            .o_data      ( w_mutex2_data[7:6]     )
+        );
+      
+      //flip flop
+        always @(posedge w_mutex2_fire[0] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p20 <= 1'b0;
+          else if(w_mutex2_data[0])
+            p20 <= 1'b1;
+          else if(w_mutex2_data[1])
+            p20 <= 1'b0;
+        end
+
+        always @(posedge w_mutex2_fire[1] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p21 <= 1'b0;
+          else if(w_mutex2_data[2])
+            p21 <= 1'b1;
+          else if(w_mutex2_data[3])
+            p21 <= 1'b0;
+        end
+
+        always @(posedge w_mutex2_fire[2] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p22 <= 1'b0;
+          else if(w_mutex2_data[4])
+            p22 <= 1'b1;
+          else if(w_mutex2_data[5])
+            p22 <= 1'b0;
+        end
+        
+        always @(posedge w_mutex2_fire[3] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p23 <= 1'b0;
+          else if(w_mutex2_data[6])
+            p23 <= 1'b1;
+          else if(w_mutex2_data[7])
+            p23 <= 1'b0;
+        end 
+      
+    //1层
+      wire [2-1:0] w_mutex1_drive_mutex0, w_mutex1_free_mutex0;
+      wire [2-1:0] w_mutex1_fire;
+      wire [4-1:0] w_mutex1_data;
+
+      //control
+        cMutexMerge2_2b_fast u_cMutex_update_10(
+            .i_drive     ( w_mutex2_drive_mutex1[1:0] ),
+            .o_fire      ( w_mutex1_fire[0]      ),
+            .o_free      ( w_mutex2_free_mutex1[1:0]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex1_drive_mutex0[0]     ),
+            .i_freeNext  ( w_mutex1_free_mutex0[0]     ),
+            .o_data      ( w_mutex1_data[1:0]     )
+        );
+        cMutexMerge2_2b_fast u_cMutex_update_11(
+            .i_drive     ( w_mutex2_drive_mutex1[3:2] ),
+            .o_fire      ( w_mutex1_fire[1]      ),
+            .o_free      ( w_mutex2_free_mutex1[3:2]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( w_mutex1_drive_mutex0[1]     ),
+            .i_freeNext  ( w_mutex1_free_mutex0[1]     ),
+            .o_data      ( w_mutex1_data[3:2]     )
+        );
+      
+      //flip flop
+        always @(posedge w_mutex1_fire[0] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p10 <= 1'b0;
+          else if(w_mutex1_data[0])
+            p10 <= 1'b1;
+          else if(w_mutex1_data[1])
+            p10 <= 1'b0;
+        end
+
+        always @(posedge w_mutex1_fire[1] or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p11 <= 1'b0;
+          else if(w_mutex1_data[2])
+            p11 <= 1'b1;
+          else if(w_mutex1_data[3])
+            p11 <= 1'b0;
+        end
+
+    //0层
+      //wire w_mutex0_drive_end, w_mutex0_free_end;
+      wire w_mutex0_fire;
+      wire [2-1:0] w_mutex0_data;
+      
+      //control
+        cMutexMerge2_2b_fast u_cMutex_update_00(
+            .i_drive     ( w_mutex1_drive_mutex0[1:0] ),
+            .o_fire      ( w_mutex0_fire      ),
+            .o_free      ( w_mutex1_free_mutex0[1:0]      ),
+            .rst         ( rst         ),
+            .o_driveNext ( o_driveNext_end     ),
+            .i_freeNext  ( i_freeNext_end     ),
+            .o_data      ( w_mutex0_data[1:0]     )
+        );
+      
+      //flip flop
+        always @(posedge w_mutex0_fire or negedge cpurst_b)
+        begin
+          if(!cpurst_b)
+            p00 <= 1'b0;
+          else if(w_mutex0_data[0])
+            p00 <= 1'b1;
+          else if(w_mutex0_data[1])
+            p00 <= 1'b0;
+        end
+
         
 
 //----------------------------------------------------------
@@ -430,6 +1043,7 @@ assign plru_update_onehot = utlb_plru_read_hit_vld ? plru_hit_onehot : plru_evic
       assign w_p21_driveNext0 = w_p10_driveNext1 & ~p21;assign w_p21_driveNext1 = w_p10_driveNext1 & p21;
       assign w_p22_driveNext0 = w_p11_driveNext0 & ~p22;assign w_p22_driveNext1 = w_p11_driveNext0 & p22;
       assign w_p23_driveNext0 = w_p11_driveNext1 & ~p23;assign w_p23_driveNext1 = w_p11_driveNext1 & p23;
+      
       
       assign w_p30_driveNext0 = w_p20_driveNext0 & ~p30;assign w_p30_driveNext1 = w_p20_driveNext0 & p30;
       assign w_p31_driveNext0 = w_p20_driveNext1 & ~p31;assign w_p31_driveNext1 = w_p20_driveNext1 & p31;
