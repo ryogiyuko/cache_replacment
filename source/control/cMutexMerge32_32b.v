@@ -25,19 +25,24 @@ module cMutexMerge32_32b #(//no i_data
 
     genvar i;
     generate
-        for ( i=0 ; i<32 ; i=i+1 ) begin:
+        for ( i=0 ; i<32 ; i=i+1 ) begin:cont_Tap
             //conTap
-            // INV_X1M_A9TRULP_C40_W3 inv6 ( .A(w_Req[i]), .Y(reqNeg[i]) );
-            // INV_X1M_A9TRULP_C40_W3 inv_for_rst ( .A(rst), .Y(Nrst[i]) );
-            // DFFRPQ_X1M_A9TRULP_C40_W3 ffState ( .D(reqNeg[i]), .CK(w_Trig[i]), .R(Nrst[i]), .Q(w_Req[i]) );
-            contTap Tap(
-            .trig(w_Trig[i]),
-            .req(w_Req[i]), .rst(rst)
-            );
+            INV_X1M_A9TRULP_C40_W3 inv6 ( .A(w_Req[i]), .Y(reqNeg[i]) );
+            INV_X1M_A9TRULP_C40_W3 inv_for_rst ( .A(rst), .Y(Nrst[i]) );
+            DFFRPQ_X1M_A9TRULP_C40_W3 ffState ( .D(reqNeg[i]), .CK(w_Trig[i]), .R(Nrst[i]), .Q(w_Req[i]) );
+            // contTap Tap(
+            // .trig(w_Trig[i]),
+            // .req(w_Req[i]), .rst(rst)
+            // );
             assign w_Trig[i] = i_drive[i] | w_free[i];
             //outfree
             assign o_free[i] = i_freeNext & w_Req[i];
-            delay1U u_out_delay1U(.inR  (o_free[i]  ),.rst  (rst  ),.outR (w_free[i] ));
+            // UMC 40nm
+            // 1u 0.5ns
+            wire A;
+            DLYCLK8S8_X1B_A9TRULP_C40_W3 delay1 ( .A(o_free[i] ), .Y(A) );
+            AND2_X1M_A9TRULP_C40_W3 AND (.A(A), .B(rst), .Y(w_free[i]) );
+            //delay1U u_out_delay1U(.inR  (o_free[i]  ),.rst  (rst  ),.outR (w_free[i] ));
         end
     endgenerate
     

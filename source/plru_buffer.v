@@ -1,4 +1,4 @@
-module plru(
+module plru_buffer(
   cpurst_b,
   entry0_vld,
   entry10_vld,
@@ -39,7 +39,8 @@ module plru(
   utlb_plru_read_hit_vld,
   utlb_plru_refill_on,
   utlb_plru_refill_vld,
-  i_drive_miss, i_drive_hit,o_free_miss, o_free_hit, i_freeNext_end, o_driveNext_end
+  i_drive_miss, i_drive_hit,o_free_miss, o_free_hit, i_freeNext_end, o_driveNext_end,
+  addr
 );
 
 // &Ports; @24       
@@ -81,41 +82,43 @@ module plru(
   input   [31:0]  utlb_plru_read_hit;    
   input           utlb_plru_read_hit_vld; 
   input           utlb_plru_refill_on;   
-  input           utlb_plru_refill_vld;  
+  input           utlb_plru_refill_vld;
+  input   [11-1:0]addr;  
   output  [31:0]  plru_iutlb_ref_num;   
 
-// &Regs; @25     
-  reg             p00;                  
-  reg             p10;                   
-  reg             p11;                   
-  reg             p20;                   
-  reg             p21;                   
-  reg             p22;                   
-  reg             p23;                   
-  reg             p30;                   
-  reg             p31;                   
-  reg             p32;                   
-  reg             p33;                   
-  reg             p34;                   
-  reg             p35;                   
-  reg             p36;                   
-  reg             p37;                   
-  reg             p40;                   
-  reg             p41;                   
-  reg             p42;                   
-  reg             p43;                   
-  reg             p44;                   
-  reg             p45;                   
-  reg             p46;                   
-  reg             p47;                   
-  reg             p48;                   
-  reg             p49;                   
-  reg             p4a;                   
-  reg             p4b;                   
-  reg             p4c;                   
-  reg             p4d;                   
-  reg             p4e;                   
-  reg             p4f;                         
+// &Regs; @25  
+  parameter       BUFFER_DEEPTH = 2048;
+  reg     [BUFFER_DEEPTH-1:0]     p00;                  
+  reg     [BUFFER_DEEPTH-1:0]     p10;                   
+  reg     [BUFFER_DEEPTH-1:0]     p11;                   
+  reg     [BUFFER_DEEPTH-1:0]     p20;                   
+  reg     [BUFFER_DEEPTH-1:0]     p21;                   
+  reg     [BUFFER_DEEPTH-1:0]     p22;                   
+  reg     [BUFFER_DEEPTH-1:0]     p23;                   
+  reg     [BUFFER_DEEPTH-1:0]     p30;                   
+  reg     [BUFFER_DEEPTH-1:0]     p31;                   
+  reg     [BUFFER_DEEPTH-1:0]     p32;                   
+  reg     [BUFFER_DEEPTH-1:0]     p33;                   
+  reg     [BUFFER_DEEPTH-1:0]     p34;                   
+  reg     [BUFFER_DEEPTH-1:0]     p35;                   
+  reg     [BUFFER_DEEPTH-1:0]     p36;                   
+  reg     [BUFFER_DEEPTH-1:0]     p37;                   
+  reg     [BUFFER_DEEPTH-1:0]     p40;                   
+  reg     [BUFFER_DEEPTH-1:0]     p41;                   
+  reg     [BUFFER_DEEPTH-1:0]     p42;                   
+  reg     [BUFFER_DEEPTH-1:0]     p43;                   
+  reg     [BUFFER_DEEPTH-1:0]     p44;                   
+  reg     [BUFFER_DEEPTH-1:0]     p45;                   
+  reg     [BUFFER_DEEPTH-1:0]     p46;                   
+  reg     [BUFFER_DEEPTH-1:0]     p47;                   
+  reg     [BUFFER_DEEPTH-1:0]     p48;                   
+  reg     [BUFFER_DEEPTH-1:0]     p49;                   
+  reg     [BUFFER_DEEPTH-1:0]     p4a;                   
+  reg     [BUFFER_DEEPTH-1:0]     p4b;                   
+  reg     [BUFFER_DEEPTH-1:0]     p4c;                   
+  reg     [BUFFER_DEEPTH-1:0]     p4d;                   
+  reg     [BUFFER_DEEPTH-1:0]     p4e;                   
+  reg     [BUFFER_DEEPTH-1:0]     p4f;                         
   reg     [31:0]  update_num_onehot;      
   reg     [4 :0]  write_num;             
 
@@ -435,295 +438,295 @@ assign plru_update_onehot = utlb_plru_read_hit_vld ? plru_hit_onehot : plru_evic
       always @(posedge w_dff4_fire[0] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p40 <= 1'b0;
+          p40[addr] <= 1'b0;
         else if(update_num_onehot[0])
-          p40 <= 1'b1;
+          p40[addr] <= 1'b1;
         else if(update_num_onehot[1])
-          p40 <= 1'b0;
+          p40[addr] <= 1'b0;
       end
 
       always @(posedge w_dff4_fire[1] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p41 <= 1'b0;
+          p41[addr] <= 1'b0;
         else if(update_num_onehot[2])
-          p41 <= 1'b1;
+          p41[addr] <= 1'b1;
         else if(update_num_onehot[3])
-          p41 <= 1'b0;
+          p41[addr] <= 1'b0;
       end
 
       always @(posedge w_dff4_fire[2] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p42 <= 1'b0;
+          p42[addr] <= 1'b0;
         else if(update_num_onehot[4])
-          p42 <= 1'b1;
+          p42[addr] <= 1'b1;
         else if(update_num_onehot[5])
-          p42 <= 1'b0;
+          p42[addr] <= 1'b0;
       end
       
       always @(posedge w_dff4_fire[3] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p43 <= 1'b0;
+          p43[addr] <= 1'b0;
         else if(update_num_onehot[6])
-          p43 <= 1'b1;
+          p43[addr] <= 1'b1;
         else if(update_num_onehot[7])
-          p43 <= 1'b0;
+          p43[addr] <= 1'b0;
       end
       always @(posedge w_dff4_fire[4] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p44 <= 1'b0;
+          p44[addr] <= 1'b0;
         else if(update_num_onehot[8])
-          p44 <= 1'b1;
+          p44[addr] <= 1'b1;
         else if(update_num_onehot[9])
-          p44 <= 1'b0;
+          p44[addr] <= 1'b0;
       end
       always @(posedge w_dff4_fire[5] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p45 <= 1'b0;
+          p45[addr] <= 1'b0;
         else if(update_num_onehot[10])
-          p45 <= 1'b1;
+          p45[addr] <= 1'b1;
         else if(update_num_onehot[11])
-          p45 <= 1'b0;
+          p45[addr] <= 1'b0;
       end
       always @(posedge w_dff4_fire[6] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p46 <= 1'b0;
+          p46[addr] <= 1'b0;
         else if(update_num_onehot[12])
-          p46 <= 1'b1;
+          p46[addr] <= 1'b1;
         else if(update_num_onehot[13])
-          p46 <= 1'b0;
+          p46[addr] <= 1'b0;
       end
       always @(posedge w_dff4_fire[7] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p47 <= 1'b0;
+          p47[addr] <= 1'b0;
         else if(update_num_onehot[14])
-          p47 <= 1'b1;
+          p47[addr] <= 1'b1;
         else if(update_num_onehot[15])
-          p47 <= 1'b0;
+          p47[addr] <= 1'b0;
       end
       always @(posedge w_dff4_fire[8] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p48 <= 1'b0;
+          p48[addr] <= 1'b0;
         else if(update_num_onehot[16])
-          p48 <= 1'b1;
+          p48[addr] <= 1'b1;
         else if(update_num_onehot[17])
-          p48 <= 1'b0;
+          p48[addr] <= 1'b0;
       end
       always @(posedge w_dff4_fire[9] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p49 <= 1'b0;
+          p49[addr] <= 1'b0;
         else if(update_num_onehot[18])
-          p49 <= 1'b1;
+          p49[addr] <= 1'b1;
         else if(update_num_onehot[19])
-          p49 <= 1'b0;
+          p49[addr] <= 1'b0;
       end
       always @(posedge w_dff4_fire[10] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p4a <= 1'b0;
+          p4a[addr] <= 1'b0;
         else if(update_num_onehot[20])
-          p4a <= 1'b1;
+          p4a[addr] <= 1'b1;
         else if(update_num_onehot[21])
-          p4a <= 1'b0;
+          p4a[addr] <= 1'b0;
       end
       always @(posedge w_dff4_fire[11] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p4b <= 1'b0;
+          p4b[addr] <= 1'b0;
         else if(update_num_onehot[22])
-          p4b <= 1'b1;
+          p4b[addr] <= 1'b1;
         else if(update_num_onehot[23])
-          p4b <= 1'b0;
+          p4b[addr] <= 1'b0;
       end
       always @(posedge w_dff4_fire[12] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p4c <= 1'b0;
+          p4c[addr] <= 1'b0;
         else if(update_num_onehot[24])
-          p4c <= 1'b1;
+          p4c[addr] <= 1'b1;
         else if(update_num_onehot[25])
-          p4c <= 1'b0;
+          p4c[addr] <= 1'b0;
       end
       always @(posedge w_dff4_fire[13] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p4d <= 1'b0;
+          p4d[addr] <= 1'b0;
         else if(update_num_onehot[26])
-          p4d <= 1'b1;
+          p4d[addr] <= 1'b1;
         else if(update_num_onehot[27])
-          p4d <= 1'b0;
+          p4d[addr] <= 1'b0;
       end
       always @(posedge w_dff4_fire[14] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p4e <= 1'b0;
+          p4e[addr] <= 1'b0;
         else if(update_num_onehot[28])
-          p4e <= 1'b1;
+          p4e[addr] <= 1'b1;
         else if(update_num_onehot[29])
-          p4e <= 1'b0;
+          p4e[addr] <= 1'b0;
       end
       always @(posedge w_dff4_fire[15] or negedge cpurst_b)
       begin
         if(!cpurst_b)
-          p4f <= 1'b0;
+          p4f[addr] <= 1'b0;
         else if(update_num_onehot[30])
-          p4f <= 1'b1;
+          p4f[addr] <= 1'b1;
         else if(update_num_onehot[31])
-          p4f <= 1'b0;
+          p4f[addr] <= 1'b0;
       end
     //3层 flip flop
         always @(posedge w_dff3_fire[0] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p30 <= 1'b0;
+            p30[addr] <= 1'b0;
           else if(w_dff3_update[0])
-            p30 <= 1'b1;
+            p30[addr] <= 1'b1;
           else if(w_dff3_update[1])
-            p30 <= 1'b0;
+            p30[addr] <= 1'b0;
         end
 
         always @(posedge w_dff3_fire[1] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p31 <= 1'b0;
+            p31[addr] <= 1'b0;
           else if(w_dff3_update[2])
-            p31 <= 1'b1;
+            p31[addr] <= 1'b1;
           else if(w_dff3_update[3])
-            p31 <= 1'b0;
+            p31[addr] <= 1'b0;
         end
 
         always @(posedge w_dff3_fire[2] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p32 <= 1'b0;
+            p32[addr] <= 1'b0;
           else if(w_dff3_update[4])
-            p32 <= 1'b1;
+            p32[addr] <= 1'b1;
           else if(w_dff3_update[5])
-            p32 <= 1'b0;
+            p32[addr] <= 1'b0;
         end
         
         always @(posedge w_dff3_fire[3] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p33 <= 1'b0;
+            p33[addr] <= 1'b0;
           else if(w_dff3_update[6])
-            p33 <= 1'b1;
+            p33[addr] <= 1'b1;
           else if(w_dff3_update[7])
-            p33 <= 1'b0;
+            p33[addr] <= 1'b0;
         end
         always @(posedge w_dff3_fire[4] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p34 <= 1'b0;
+            p34[addr] <= 1'b0;
           else if(w_dff3_update[8])
-            p34 <= 1'b1;
+            p34[addr] <= 1'b1;
           else if(w_dff3_update[9])
-            p34 <= 1'b0;
+            p34[addr] <= 1'b0;
         end
         always @(posedge w_dff3_fire[5] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p35 <= 1'b0;
+            p35[addr] <= 1'b0;
           else if(w_dff3_update[10])
-            p35 <= 1'b1;
+            p35[addr] <= 1'b1;
           else if(w_dff3_update[11])
-            p35 <= 1'b0;
+            p35[addr] <= 1'b0;
         end
         always @(posedge w_dff3_fire[6] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p36 <= 1'b0;
+            p36[addr] <= 1'b0;
           else if(w_dff3_update[12])
-            p36 <= 1'b1;
+            p36[addr] <= 1'b1;
           else if(w_dff3_update[13])
-            p36 <= 1'b0;
+            p36[addr] <= 1'b0;
         end
         always @(posedge w_dff3_fire[7] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p37 <= 1'b0;
+            p37[addr] <= 1'b0;
           else if(w_dff3_update[14])
-            p37 <= 1'b1;
+            p37[addr] <= 1'b1;
           else if(w_dff3_update[15])
-            p37 <= 1'b0;
+            p37[addr] <= 1'b0;
         end
     //2层 flip flop
         always @(posedge w_dff2_fire[0] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p20 <= 1'b0;
+            p20[addr] <= 1'b0;
           else if(w_dff2_update[0])
-            p20 <= 1'b1;
+            p20[addr] <= 1'b1;
           else if(w_dff2_update[1])
-            p20 <= 1'b0;
+            p20[addr] <= 1'b0;
         end
 
         always @(posedge w_dff2_fire[1] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p21 <= 1'b0;
+            p21[addr] <= 1'b0;
           else if(w_dff2_update[2])
-            p21 <= 1'b1;
+            p21[addr] <= 1'b1;
           else if(w_dff2_update[3])
-            p21 <= 1'b0;
+            p21[addr] <= 1'b0;
         end
 
         always @(posedge w_dff2_fire[2] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p22 <= 1'b0;
+            p22[addr] <= 1'b0;
           else if(w_dff2_update[4])
-            p22 <= 1'b1;
+            p22[addr] <= 1'b1;
           else if(w_dff2_update[5])
-            p22 <= 1'b0;
+            p22[addr] <= 1'b0;
         end
         
         always @(posedge w_dff2_fire[3] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p23 <= 1'b0;
+            p23[addr] <= 1'b0;
           else if(w_dff2_update[6])
-            p23 <= 1'b1;
+            p23[addr] <= 1'b1;
           else if(w_dff2_update[7])
-            p23 <= 1'b0;
+            p23[addr] <= 1'b0;
         end 
     //1层 flip flop
         always @(posedge w_dff1_fire[0] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p10 <= 1'b0;
+            p10[addr] <= 1'b0;
           else if(w_dff1_update[0])
-            p10 <= 1'b1;
+            p10[addr] <= 1'b1;
           else if(w_dff1_update[1])
-            p10 <= 1'b0;
+            p10[addr] <= 1'b0;
         end
 
         always @(posedge w_dff1_fire[1] or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p11 <= 1'b0;
+            p11[addr] <= 1'b0;
           else if(w_dff1_update[2])
-            p11 <= 1'b1;
+            p11[addr] <= 1'b1;
           else if(w_dff1_update[3])
-            p11 <= 1'b0;
+            p11[addr] <= 1'b0;
         end
     //0层 flip flop
         always @(posedge w_dff0_fire or negedge cpurst_b)
         begin
           if(!cpurst_b)
-            p00 <= 1'b0;
+            p00[addr] <= 1'b0;
           else if(w_dff0_update[0])
-            p00 <= 1'b1;
+            p00[addr] <= 1'b1;
           else if(w_dff0_update[1])
-            p00 <= 1'b0;
+            p00[addr] <= 1'b0;
         end
         
 
