@@ -381,55 +381,57 @@ assign plru_update_onehot = utlb_plru_read_hit_vld ? plru_hit_onehot : plru_evic
     //          P40 P41         ......         P4E P4F
 
   //控制链
-    wire w_drive_update, w_free_update;
-    wire [32-1:0] w_drive_mutex_update, w_free_mutex_update;
+    //变量定义
+      wire w_drive_update, w_free_update;
+      wire [32-1:0] w_drive_mutex_update, w_free_mutex_update;
 
-    assign w_drive_update = utlb_plru_read_hit_vld ? i_drive_hit : w_mutex_evict_driveNext;
-    assign o_free_hit = utlb_plru_read_hit_vld & w_free_update;
-    assign w_mutex_evict_freeNext = ~utlb_plru_read_hit_vld & w_free_update;
-    assign w_free_update = i_freeNext_end;
+      assign w_drive_update = utlb_plru_read_hit_vld ? i_drive_hit : w_mutex_evict_driveNext;
+      assign o_free_hit = utlb_plru_read_hit_vld & w_free_update;
+      assign w_mutex_evict_freeNext = ~utlb_plru_read_hit_vld & w_free_update;
+      assign w_free_update = i_freeNext_end;
 
-    wire [16-1:0] w_dff4_fire;
-    wire [16-1:0] w_dff3_update;
-    wire [8-1:0] w_dff3_fire;
-    wire [8-1:0] w_dff2_update;
-    wire [4-1:0] w_dff2_fire;
-    wire [4-1:0] w_dff1_update;
-    wire [1:0] w_dff1_fire;
-    wire [1:0] w_dff0_update;
-    wire w_dff0_fire;
+      wire [16-1:0] w_dff4_fire;
+      wire [16-1:0] w_dff3_update;
+      wire [8-1:0] w_dff3_fire;
+      wire [8-1:0] w_dff2_update;
+      wire [4-1:0] w_dff2_fire;
+      wire [4-1:0] w_dff1_update;
+      wire [1:0] w_dff1_fire;
+      wire [1:0] w_dff0_update;
+      wire w_dff0_fire;
 
-    genvar i,j,k;
-    generate
-        for ( i=0 ; i<32 ; i=i+1 ) begin:four
-          assign w_drive_mutex_update[i] = update_num_onehot[i] & w_drive_update;
-        end
-        for ( j=0 ; j<16; j=j+1 ) begin:three
-          assign w_dff4_fire[j] = w_drive_mutex_update[2*j] | w_drive_mutex_update[2*j+1];
-          assign w_dff3_update[j] = update_num_onehot[2*j] | update_num_onehot[2*j+1];
-        end
-        for ( k=0 ; k<8; k=k+1 ) begin:two
-          assign w_dff3_fire[k] = w_dff4_fire[2*k] | w_dff4_fire[2*k+1];
-          assign w_dff2_update[k] = w_dff3_update[2*k] | w_dff3_update[2*k+1];
-        end
-    endgenerate
+    //assign赋值
+      genvar i,j,k;
+      generate
+          for ( i=0 ; i<32 ; i=i+1 ) begin:four
+            assign w_drive_mutex_update[i] = update_num_onehot[i] & w_drive_update;
+          end
+          for ( j=0 ; j<16; j=j+1 ) begin:three
+            assign w_dff4_fire[j] = w_drive_mutex_update[2*j] | w_drive_mutex_update[2*j+1];
+            assign w_dff3_update[j] = update_num_onehot[2*j] | update_num_onehot[2*j+1];
+          end
+          for ( k=0 ; k<8; k=k+1 ) begin:two
+            assign w_dff3_fire[k] = w_dff4_fire[2*k] | w_dff4_fire[2*k+1];
+            assign w_dff2_update[k] = w_dff3_update[2*k] | w_dff3_update[2*k+1];
+          end
+      endgenerate
 
-    assign w_dff2_fire[0] = w_dff3_fire[0] | w_dff3_fire[1];
-    assign w_dff2_fire[1] = w_dff3_fire[2] | w_dff3_fire[3];
-    assign w_dff2_fire[2] = w_dff3_fire[4] | w_dff3_fire[5];
-    assign w_dff2_fire[3] = w_dff3_fire[6] | w_dff3_fire[7];
-    assign w_dff1_update[0] = w_dff2_update[0] | w_dff2_update[1];
-    assign w_dff1_update[1] = w_dff2_update[2] | w_dff2_update[3];
-    assign w_dff1_update[2] = w_dff2_update[4] | w_dff2_update[5];
-    assign w_dff1_update[3] = w_dff2_update[6] | w_dff2_update[7];
-    assign w_dff1_fire[0] = w_dff2_fire[0] | w_dff2_fire[1];
-    assign w_dff1_fire[1] = w_dff2_fire[2] | w_dff2_fire[3];
-    assign w_dff0_update[0] = w_dff1_update[0] | w_dff1_update[1];
-    assign w_dff0_update[1] = w_dff1_update[0] | w_dff1_update[1];
-    assign w_dff0_fire = w_dff1_fire[0] | w_dff1_fire[1];
-    
-    assign o_driveNext_end = w_dff0_fire;
-    //assign w_free_update = | w_free_mutex_update;
+      assign w_dff2_fire[0] = w_dff3_fire[0] | w_dff3_fire[1];
+      assign w_dff2_fire[1] = w_dff3_fire[2] | w_dff3_fire[3];
+      assign w_dff2_fire[2] = w_dff3_fire[4] | w_dff3_fire[5];
+      assign w_dff2_fire[3] = w_dff3_fire[6] | w_dff3_fire[7];
+      assign w_dff1_update[0] = w_dff2_update[0] | w_dff2_update[1];
+      assign w_dff1_update[1] = w_dff2_update[2] | w_dff2_update[3];
+      assign w_dff1_update[2] = w_dff2_update[4] | w_dff2_update[5];
+      assign w_dff1_update[3] = w_dff2_update[6] | w_dff2_update[7];
+      assign w_dff1_fire[0] = w_dff2_fire[0] | w_dff2_fire[1];
+      assign w_dff1_fire[1] = w_dff2_fire[2] | w_dff2_fire[3];
+      assign w_dff0_update[0] = w_dff1_update[0] | w_dff1_update[1];
+      assign w_dff0_update[1] = w_dff1_update[0] | w_dff1_update[1];
+      assign w_dff0_fire = w_dff1_fire[0] | w_dff1_fire[1];
+      
+      assign o_driveNext_end = w_dff0_fire;
+      //assign w_free_update = | w_free_mutex_update;
 
     //4层 寄存器
       always @(posedge w_dff4_fire[0] or negedge cpurst_b)
