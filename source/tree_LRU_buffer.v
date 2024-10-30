@@ -51,27 +51,6 @@
 //          2层      [5]    [6]  [3]    [4]     
 //     
 
-//
-// if (rst==0) begin
-   
-// end
-// else begin
-    // case (w_case_number)
-    //     3'b001:begin
-            
-    //     end
-    //     3'b010:begin
-            
-    //     end
-    //     3'b100:begin
-            
-    //     end
-    //     default:begin
-            
-    //     end 
-    // endcase
-// end
-
 module tree_LRU_buffer(
     input rst,
     input i_drive_treeLRU, i_freeNext,

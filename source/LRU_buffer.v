@@ -22,9 +22,9 @@
 
 module LRU_buffer(
     input clk,rst, 
-    input [7:0] i_hit_way_8,
-    input i_lru_write_enable, 
-    input i_hit_sig,
+    input [7:0] i_hit_way_8,//命中哪一行
+    //input i_lru_write_enable, 
+    input i_hit_sig,//是否命中
     output [2:0] buffer_out0,buffer_out1,buffer_out2,buffer_out3,buffer_out4,buffer_out5,buffer_out6,buffer_out7,
     output [7:0] out_lru_flag,  //onehot 哪个行是最LRU的
     input [6:0] i_addr_7 //七位地址寻址128行
@@ -59,12 +59,10 @@ module LRU_buffer(
             end
         end
         else begin
-            if (i_lru_write_enable) begin
                 lru_buffer[0][i_addr_7] <= lru_buffer_datain[0];lru_buffer[1][i_addr_7] <= lru_buffer_datain[1];
                 lru_buffer[2][i_addr_7] <= lru_buffer_datain[2];lru_buffer[3][i_addr_7] <= lru_buffer_datain[3];
                 lru_buffer[4][i_addr_7] <= lru_buffer_datain[4];lru_buffer[5][i_addr_7] <= lru_buffer_datain[5];
                 lru_buffer[6][i_addr_7] <= lru_buffer_datain[6];//lru_buffer[7][i_addr_7] <= lru_buffer_datain[7]; 
-            end
         end
     end
 
