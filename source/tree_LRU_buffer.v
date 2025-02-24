@@ -404,28 +404,34 @@ module tree_LRU_buffer(
             );
 
         //lastMutex
-            cMutexMerge5_5b u_cMutexMerge5_5b(
-                .i_drive0    ( w_fifo3_drive_lastMutex    ),
-                .i_drive1    ( w_fifo4_drive_lastMutex    ),
-                .i_drive2    ( w_fifo5_drive_lastMutex    ),
-                .i_drive3    ( w_fifo6_drive_lastMutex    ),
-                .i_drive4    ( w_leafFifo_drive_lastMutex    ),
-                .i_data0     ( 5'b00001     ),
-                .i_data1     ( 5'b00010     ),
-                .i_data2     ( 5'b00100     ),
-                .i_data3     ( 5'b01000     ),
-                .i_data4     ( 5'b10000     ),
+            // cMutexMerge5_5b u_cMutexMerge5_5b(
+            //     .i_drive0    ( w_fifo3_drive_lastMutex    ),
+            //     .i_drive1    ( w_fifo4_drive_lastMutex    ),
+            //     .i_drive2    ( w_fifo5_drive_lastMutex    ),
+            //     .i_drive3    ( w_fifo6_drive_lastMutex    ),
+            //     .i_drive4    ( w_leafFifo_drive_lastMutex    ),
+            //     .i_data0     ( 5'b00001     ),
+            //     .i_data1     ( 5'b00010     ),
+            //     .i_data2     ( 5'b00100     ),
+            //     .i_data3     ( 5'b01000     ),
+            //     .i_data4     ( 5'b10000     ),
 
-                .i_freeNext  ( i_freeNext  ),
-                .rst         ( rst         ),
-                .o_free0     ( w_fifo3_free_lastMutex     ),
-                .o_free1     ( w_fifo4_free_lastMutex     ),
-                .o_free2     ( w_fifo5_free_lastMutex     ),
-                .o_free3     ( w_fifo6_free_lastMutex     ),
-                .o_free4     ( w_leafFifo_free_lastMutex     ),
-                .o_driveNext ( o_driveNext ),
-                .o_data      (       )
-            );
+            //     .i_freeNext  ( i_freeNext  ),
+            //     .rst         ( rst         ),
+            //     .o_free0     ( w_fifo3_free_lastMutex     ),
+            //     .o_free1     ( w_fifo4_free_lastMutex     ),
+            //     .o_free2     ( w_fifo5_free_lastMutex     ),
+            //     .o_free3     ( w_fifo6_free_lastMutex     ),
+            //     .o_free4     ( w_leafFifo_free_lastMutex     ),
+            //     .o_driveNext ( o_driveNext ),
+            //     .o_data      (       )
+            // );
+        assign o_driveNext = w_fifo3_drive_lastMutex | w_fifo4_drive_lastMutex | w_fifo5_drive_lastMutex | w_fifo6_drive_lastMutex | w_leafFifo_drive_lastMutex;
+        assign w_fifo3_free_lastMutex = o_driveNext;
+        assign w_fifo4_free_lastMutex = o_driveNext;
+        assign w_fifo5_free_lastMutex = o_driveNext;
+        assign w_fifo6_free_lastMutex = o_driveNext;
+
 
 //buffer update 缓冲更新
     wire w_nowFloor;
