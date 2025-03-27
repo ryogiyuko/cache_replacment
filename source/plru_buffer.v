@@ -83,11 +83,11 @@ module plru_buffer(
   input           utlb_plru_read_hit_vld; 
   input           utlb_plru_refill_on;   
   input           utlb_plru_refill_vld;
-  input   [11-1:0]addr;  
+  input   [7-1:0]addr;  
   output  [31:0]  plru_iutlb_ref_num;   
 
 // &Regs; @25  
-  parameter       BUFFER_DEEPTH = 2048;
+  parameter       BUFFER_DEEPTH = 128;
   reg     [BUFFER_DEEPTH-1:0]     p00;                  
   reg     [BUFFER_DEEPTH-1:0]     p10;                   
   reg     [BUFFER_DEEPTH-1:0]     p11;                   
@@ -752,42 +752,41 @@ assign plru_update_onehot = utlb_plru_read_hit_vld ? plru_hit_onehot : plru_evic
       wire w_p4c_driveNext0,w_p4c_driveNext1, w_p4d_driveNext0,w_p4d_driveNext1, w_p4e_driveNext0,w_p4e_driveNext1, w_p4f_driveNext0,w_p4f_driveNext1;
 
       //虽然事件也会随着plru树的变化改变结果，但仅有寄存器的电平翻转，其他的元件直到事件来才会发生改变
-      assign w_p00_driveNext0 = i_drive_miss & ~p00;assign w_p00_driveNext1 = i_drive_miss & p00;
+      assign w_p00_driveNext0 = i_drive_miss & ~p00[addr];assign w_p00_driveNext1 = i_drive_miss & p00[addr];
       
-      assign w_p10_driveNext0 = w_p00_driveNext0 & ~p10;assign w_p10_driveNext1 = w_p00_driveNext0 & p10;
-      assign w_p11_driveNext0 = w_p00_driveNext1 & ~p11;assign w_p11_driveNext1 = w_p00_driveNext1 & p11;
+      assign w_p10_driveNext0 = w_p00_driveNext0 & ~p10[addr];assign w_p10_driveNext1 = w_p00_driveNext0 & p10[addr];
+      assign w_p11_driveNext0 = w_p00_driveNext1 & ~p11[addr];assign w_p11_driveNext1 = w_p00_driveNext1 & p11[addr];
 
-      assign w_p20_driveNext0 = w_p10_driveNext0 & ~p20;assign w_p20_driveNext1 = w_p10_driveNext0 & p20;
-      assign w_p21_driveNext0 = w_p10_driveNext1 & ~p21;assign w_p21_driveNext1 = w_p10_driveNext1 & p21;
-      assign w_p22_driveNext0 = w_p11_driveNext0 & ~p22;assign w_p22_driveNext1 = w_p11_driveNext0 & p22;
-      assign w_p23_driveNext0 = w_p11_driveNext1 & ~p23;assign w_p23_driveNext1 = w_p11_driveNext1 & p23;
+      assign w_p20_driveNext0 = w_p10_driveNext0 & ~p20[addr];assign w_p20_driveNext1 = w_p10_driveNext0 & p20[addr];
+      assign w_p21_driveNext0 = w_p10_driveNext1 & ~p21[addr];assign w_p21_driveNext1 = w_p10_driveNext1 & p21[addr];
+      assign w_p22_driveNext0 = w_p11_driveNext0 & ~p22[addr];assign w_p22_driveNext1 = w_p11_driveNext0 & p22[addr];
+      assign w_p23_driveNext0 = w_p11_driveNext1 & ~p23[addr];assign w_p23_driveNext1 = w_p11_driveNext1 & p23[addr];
+
+      assign w_p30_driveNext0 = w_p20_driveNext0 & ~p30[addr];assign w_p30_driveNext1 = w_p20_driveNext0 & p30[addr];
+      assign w_p31_driveNext0 = w_p20_driveNext1 & ~p31[addr];assign w_p31_driveNext1 = w_p20_driveNext1 & p31[addr];
+      assign w_p32_driveNext0 = w_p21_driveNext0 & ~p32[addr];assign w_p32_driveNext1 = w_p21_driveNext0 & p32[addr];
+      assign w_p33_driveNext0 = w_p21_driveNext1 & ~p33[addr];assign w_p33_driveNext1 = w_p21_driveNext1 & p33[addr];
+      assign w_p34_driveNext0 = w_p22_driveNext0 & ~p34[addr];assign w_p34_driveNext1 = w_p22_driveNext0 & p34[addr];
+      assign w_p35_driveNext0 = w_p22_driveNext1 & ~p35[addr];assign w_p35_driveNext1 = w_p22_driveNext1 & p35[addr];
+      assign w_p36_driveNext0 = w_p23_driveNext0 & ~p36[addr];assign w_p36_driveNext1 = w_p23_driveNext0 & p36[addr];
+      assign w_p37_driveNext0 = w_p23_driveNext1 & ~p37[addr];assign w_p37_driveNext1 = w_p23_driveNext1 & p37[addr];
       
-      assign w_p30_driveNext0 = w_p20_driveNext0 & ~p30;assign w_p30_driveNext1 = w_p20_driveNext0 & p30;
-      assign w_p31_driveNext0 = w_p20_driveNext1 & ~p31;assign w_p31_driveNext1 = w_p20_driveNext1 & p31;
-      assign w_p32_driveNext0 = w_p21_driveNext0 & ~p32;assign w_p32_driveNext1 = w_p21_driveNext0 & p32;
-      assign w_p33_driveNext0 = w_p21_driveNext1 & ~p33;assign w_p33_driveNext1 = w_p21_driveNext1 & p33;
-      assign w_p34_driveNext0 = w_p22_driveNext0 & ~p34;assign w_p34_driveNext1 = w_p22_driveNext0 & p34;
-      assign w_p35_driveNext0 = w_p22_driveNext1 & ~p35;assign w_p35_driveNext1 = w_p22_driveNext1 & p35;
-      assign w_p36_driveNext0 = w_p23_driveNext0 & ~p36;assign w_p36_driveNext1 = w_p23_driveNext0 & p36;
-      assign w_p37_driveNext0 = w_p23_driveNext1 & ~p37;assign w_p37_driveNext1 = w_p23_driveNext1 & p37;
-
-      assign w_p40_driveNext0 = w_p30_driveNext0 & ~p40;assign w_p40_driveNext1 = w_p30_driveNext0 & p40;
-      assign w_p41_driveNext0 = w_p30_driveNext1 & ~p41;assign w_p41_driveNext1 = w_p30_driveNext1 & p41;
-      assign w_p42_driveNext0 = w_p31_driveNext0 & ~p42;assign w_p42_driveNext1 = w_p31_driveNext0 & p42;
-      assign w_p43_driveNext0 = w_p31_driveNext1 & ~p43;assign w_p43_driveNext1 = w_p31_driveNext1 & p43;
-      assign w_p44_driveNext0 = w_p32_driveNext0 & ~p44;assign w_p44_driveNext1 = w_p32_driveNext0 & p44;
-      assign w_p45_driveNext0 = w_p32_driveNext1 & ~p45;assign w_p45_driveNext1 = w_p32_driveNext1 & p45;
-      assign w_p46_driveNext0 = w_p33_driveNext0 & ~p46;assign w_p46_driveNext1 = w_p33_driveNext0 & p46;
-      assign w_p47_driveNext0 = w_p33_driveNext1 & ~p47;assign w_p47_driveNext1 = w_p33_driveNext1 & p47;
-
-      assign w_p48_driveNext0 = w_p34_driveNext0 & ~p48;assign w_p48_driveNext1 = w_p34_driveNext0 & p48;
-      assign w_p49_driveNext0 = w_p34_driveNext1 & ~p49;assign w_p49_driveNext1 = w_p34_driveNext1 & p49;
-      assign w_p4a_driveNext0 = w_p35_driveNext0 & ~p4a;assign w_p4a_driveNext1 = w_p35_driveNext0 & p4a;
-      assign w_p4b_driveNext0 = w_p35_driveNext1 & ~p4b;assign w_p4b_driveNext1 = w_p35_driveNext1 & p4b;
-      assign w_p4c_driveNext0 = w_p36_driveNext0 & ~p4c;assign w_p4c_driveNext1 = w_p36_driveNext0 & p4c;
-      assign w_p4d_driveNext0 = w_p36_driveNext1 & ~p4d;assign w_p4d_driveNext1 = w_p36_driveNext1 & p4d;
-      assign w_p4e_driveNext0 = w_p37_driveNext0 & ~p4e;assign w_p4e_driveNext1 = w_p37_driveNext0 & p4e;
-      assign w_p4f_driveNext0 = w_p37_driveNext1 & ~p4f;assign w_p4f_driveNext1 = w_p37_driveNext1 & p4f;
+      assign w_p40_driveNext0 = w_p30_driveNext0 & ~p40[addr];assign w_p40_driveNext1 = w_p30_driveNext0 & p40[addr];
+      assign w_p41_driveNext0 = w_p30_driveNext1 & ~p41[addr];assign w_p41_driveNext1 = w_p30_driveNext1 & p41[addr];
+      assign w_p42_driveNext0 = w_p31_driveNext0 & ~p42[addr];assign w_p42_driveNext1 = w_p31_driveNext0 & p42[addr];
+      assign w_p43_driveNext0 = w_p31_driveNext1 & ~p43[addr];assign w_p43_driveNext1 = w_p31_driveNext1 & p43[addr];
+      assign w_p44_driveNext0 = w_p32_driveNext0 & ~p44[addr];assign w_p44_driveNext1 = w_p32_driveNext0 & p44[addr];
+      assign w_p45_driveNext0 = w_p32_driveNext1 & ~p45[addr];assign w_p45_driveNext1 = w_p32_driveNext1 & p45[addr];
+      assign w_p46_driveNext0 = w_p33_driveNext0 & ~p46[addr];assign w_p46_driveNext1 = w_p33_driveNext0 & p46[addr];
+      assign w_p47_driveNext0 = w_p33_driveNext1 & ~p47[addr];assign w_p47_driveNext1 = w_p33_driveNext1 & p47[addr];
+      assign w_p48_driveNext0 = w_p34_driveNext0 & ~p48[addr];assign w_p48_driveNext1 = w_p34_driveNext0 & p48[addr];
+      assign w_p49_driveNext0 = w_p34_driveNext1 & ~p49[addr];assign w_p49_driveNext1 = w_p34_driveNext1 & p49[addr];
+      assign w_p4a_driveNext0 = w_p35_driveNext0 & ~p4a[addr];assign w_p4a_driveNext1 = w_p35_driveNext0 & p4a[addr];
+      assign w_p4b_driveNext0 = w_p35_driveNext1 & ~p4b[addr];assign w_p4b_driveNext1 = w_p35_driveNext1 & p4b[addr];
+      assign w_p4c_driveNext0 = w_p36_driveNext0 & ~p4c[addr];assign w_p4c_driveNext1 = w_p36_driveNext0 & p4c[addr];
+      assign w_p4d_driveNext0 = w_p36_driveNext1 & ~p4d[addr];assign w_p4d_driveNext1 = w_p36_driveNext1 & p4d[addr];
+      assign w_p4e_driveNext0 = w_p37_driveNext0 & ~p4e[addr];assign w_p4e_driveNext1 = w_p37_driveNext0 & p4e[addr];
+      assign w_p4f_driveNext0 = w_p37_driveNext1 & ~p4f[addr];assign w_p4f_driveNext1 = w_p37_driveNext1 & p4f[addr];
 
       assign w_drive_mutex_evict = {
         w_p4f_driveNext1, w_p4f_driveNext0,

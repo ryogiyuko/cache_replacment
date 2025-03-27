@@ -55,7 +55,8 @@ module ct_mmu_iplru_buffer(
   utlb_plru_read_hit,
   utlb_plru_read_hit_vld,
   utlb_plru_refill_on,
-  utlb_plru_refill_vld
+  utlb_plru_refill_vld,
+  addr
 );
 
 // &Ports; @24
@@ -99,42 +100,44 @@ input   [31:0]  utlb_plru_read_hit;
 input           utlb_plru_read_hit_vld; 
 input           utlb_plru_refill_on;   
 input           utlb_plru_refill_vld;  
+input   [7-1:0] addr;
 output  [31:0]  plru_iutlb_ref_num;    
 
 // &Regs; @25
 reg     [4 :0]  hit_num_flop;          
 reg     [4 :0]  hit_num_index;         
-reg             p00;                   
-reg             p10;                   
-reg             p11;                   
-reg             p20;                   
-reg             p21;                   
-reg             p22;                   
-reg             p23;                   
-reg             p30;                   
-reg             p31;                   
-reg             p32;                   
-reg             p33;                   
-reg             p34;                   
-reg             p35;                   
-reg             p36;                   
-reg             p37;                   
-reg             p40;                   
-reg             p41;                   
-reg             p42;                   
-reg             p43;                   
-reg             p44;                   
-reg             p45;                   
-reg             p46;                   
-reg             p47;                   
-reg             p48;                   
-reg             p49;                   
-reg             p4a;                   
-reg             p4b;                   
-reg             p4c;                   
-reg             p4d;                   
-reg             p4e;                   
-reg             p4f;                   
+parameter       BUFFER_DEEPTH = 128;
+  reg     [BUFFER_DEEPTH-1:0]     p00;                  
+  reg     [BUFFER_DEEPTH-1:0]     p10;                   
+  reg     [BUFFER_DEEPTH-1:0]     p11;                   
+  reg     [BUFFER_DEEPTH-1:0]     p20;                   
+  reg     [BUFFER_DEEPTH-1:0]     p21;                   
+  reg     [BUFFER_DEEPTH-1:0]     p22;                   
+  reg     [BUFFER_DEEPTH-1:0]     p23;                   
+  reg     [BUFFER_DEEPTH-1:0]     p30;                   
+  reg     [BUFFER_DEEPTH-1:0]     p31;                   
+  reg     [BUFFER_DEEPTH-1:0]     p32;                   
+  reg     [BUFFER_DEEPTH-1:0]     p33;                   
+  reg     [BUFFER_DEEPTH-1:0]     p34;                   
+  reg     [BUFFER_DEEPTH-1:0]     p35;                   
+  reg     [BUFFER_DEEPTH-1:0]     p36;                   
+  reg     [BUFFER_DEEPTH-1:0]     p37;                   
+  reg     [BUFFER_DEEPTH-1:0]     p40;                   
+  reg     [BUFFER_DEEPTH-1:0]     p41;                   
+  reg     [BUFFER_DEEPTH-1:0]     p42;                   
+  reg     [BUFFER_DEEPTH-1:0]     p43;                   
+  reg     [BUFFER_DEEPTH-1:0]     p44;                   
+  reg     [BUFFER_DEEPTH-1:0]     p45;                   
+  reg     [BUFFER_DEEPTH-1:0]     p46;                   
+  reg     [BUFFER_DEEPTH-1:0]     p47;                   
+  reg     [BUFFER_DEEPTH-1:0]     p48;                   
+  reg     [BUFFER_DEEPTH-1:0]     p49;                   
+  reg     [BUFFER_DEEPTH-1:0]     p4a;                   
+  reg     [BUFFER_DEEPTH-1:0]     p4b;                   
+  reg     [BUFFER_DEEPTH-1:0]     p4c;                   
+  reg     [BUFFER_DEEPTH-1:0]     p4d;                   
+  reg     [BUFFER_DEEPTH-1:0]     p4e;                   
+  reg     [BUFFER_DEEPTH-1:0]     p4f;                   
 reg     [4 :0]  refill_num_index;      
 reg     [31:0]  refill_num_onehot;     
 reg     [4 :0]  write_num;             
@@ -515,16 +518,16 @@ end
 //                           /    \
 //                         0/      \1
 //                         /        \
-//                     P10            P11
+//                     P10[addr]            P11
 //                      /\           /\
 //                    0/  \1       0/  \1
 //                    /    \       /    \
-//                P20     P21     P22     P23
+//                P20[addr]     P21[addr]     P22[addr]     P23
 //               /\      /\       /\       /\
 //             0/  \1  0/  \1   0/  \1   0/  \1
-//            P30 P31  P32 P33  P34 P35  P36 P37          
+//            P30[addr] P31[addr]  P32[addr] P33[addr]  P34[addr] P35[addr]  P36[addr] P37[addr]          
 //            /\            ......            /\
-//          P40 P41         ......         P4E P4F
+//          P40[addr] P41[addr]         ......         P4E P4F
 
 assign plru_write_updt = utlb_plru_refill_vld;
 assign plru_read_updt  = utlb_plru_read_hit_vld
@@ -541,11 +544,11 @@ assign p00_read_updt_val  = !hit_num_index[4];
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p00 <= 1'b0;
+    p00[addr] <= 1'b0;
   else if(plru_write_updt)
-    p00 <= p00_write_updt_val;
+    p00[addr] <= p00_write_updt_val;
   else if(plru_read_updt)
-    p00 <= p00_read_updt_val;
+    p00[addr] <= p00_read_updt_val;
 end
 
 
@@ -562,11 +565,11 @@ assign p10_read_updt_val  = (hit_num_index[4:3] == 2'b00);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p10 <= 1'b0;
+    p10[addr] <= 1'b0;
   else if(p10_write_updt)
-    p10 <= p10_write_updt_val;
+    p10[addr] <= p10_write_updt_val;
   else if(p10_read_updt)
-    p10 <= p10_read_updt_val;
+    p10[addr] <= p10_read_updt_val;
 end
 
 // Path 11
@@ -579,11 +582,11 @@ assign p11_read_updt_val  = (hit_num_index[4:3] == 2'b10);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p11 <= 1'b0;
+    p11[addr] <= 1'b0;
   else if(p11_write_updt)
-    p11 <= p11_write_updt_val;
+    p11[addr] <= p11_write_updt_val;
   else if(p11_read_updt)
-    p11 <= p11_read_updt_val;
+    p11[addr] <= p11_read_updt_val;
 end
 
 
@@ -602,11 +605,11 @@ assign p20_read_updt_val  = (hit_num_index[4:2] == 3'b000);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p20 <= 1'b0;
+    p20[addr] <= 1'b0;
   else if(p20_write_updt)
-    p20 <= p20_write_updt_val;
+    p20[addr] <= p20_write_updt_val;
   else if(p20_read_updt)
-    p20 <= p20_read_updt_val;
+    p20[addr] <= p20_read_updt_val;
 end
 
 // Path 21
@@ -621,11 +624,11 @@ assign p21_read_updt_val  = (hit_num_index[4:2] == 3'b010);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p21 <= 1'b0;
+    p21[addr] <= 1'b0;
   else if(p21_write_updt)
-    p21 <= p21_write_updt_val;
+    p21[addr] <= p21_write_updt_val;
   else if(p21_read_updt)
-    p21 <= p21_read_updt_val;
+    p21[addr] <= p21_read_updt_val;
 end
 
 // Path 22
@@ -640,11 +643,11 @@ assign p22_read_updt_val  = (hit_num_index[4:2] == 3'b100);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p22 <= 1'b0;
+    p22[addr] <= 1'b0;
   else if(p22_write_updt)
-    p22 <= p22_write_updt_val;
+    p22[addr] <= p22_write_updt_val;
   else if(p22_read_updt)
-    p22 <= p22_read_updt_val;
+    p22[addr] <= p22_read_updt_val;
 end
 
 // Path 23
@@ -659,11 +662,11 @@ assign p23_read_updt_val  = (hit_num_index[4:2] == 3'b110);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p23 <= 1'b0;
+    p23[addr] <= 1'b0;
   else if(p23_write_updt)
-    p23 <= p23_write_updt_val;
+    p23[addr] <= p23_write_updt_val;
   else if(p23_read_updt)
-    p23 <= p23_read_updt_val;
+    p23[addr] <= p23_read_updt_val;
 end
 
 
@@ -682,11 +685,11 @@ assign p30_read_updt_val  = (hit_num_index[4:1] == 4'b0000);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p30 <= 1'b0;
+    p30[addr] <= 1'b0;
   else if(p30_write_updt)
-    p30 <= p30_write_updt_val;
+    p30[addr] <= p30_write_updt_val;
   else if(p30_read_updt)
-    p30 <= p30_read_updt_val;
+    p30[addr] <= p30_read_updt_val;
 end
 
 //Path 31
@@ -701,11 +704,11 @@ assign p31_read_updt_val  = (hit_num_index[4:1] == 4'b0010);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p31 <= 1'b0; 
+    p31[addr] <= 1'b0; 
   else if(p31_write_updt)
-    p31 <= p31_write_updt_val;
+    p31[addr] <= p31_write_updt_val;
   else if(p31_read_updt)
-    p31 <= p31_read_updt_val;
+    p31[addr] <= p31_read_updt_val;
 end
   
 //Path 32
@@ -720,11 +723,11 @@ assign p32_read_updt_val  = (hit_num_index[4:1] == 4'b0100);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p32 <= 1'b0; 
+    p32[addr] <= 1'b0; 
   else if(p32_write_updt)
-    p32 <= p32_write_updt_val;
+    p32[addr] <= p32_write_updt_val;
   else if(p32_read_updt)
-    p32 <= p32_read_updt_val;
+    p32[addr] <= p32_read_updt_val;
 end 
   
 //Path 33
@@ -739,11 +742,11 @@ assign p33_read_updt_val  = (hit_num_index[4:1] == 4'b0110);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p33 <= 1'b0; 
+    p33[addr] <= 1'b0; 
   else if(p33_write_updt)
-    p33 <= p33_write_updt_val;
+    p33[addr] <= p33_write_updt_val;
   else if(p33_read_updt)
-    p33 <= p33_read_updt_val;
+    p33[addr] <= p33_read_updt_val;
 end 
   
 //Path 34
@@ -758,11 +761,11 @@ assign p34_read_updt_val  = (hit_num_index[4:1] == 4'b1000);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p34 <= 1'b0; 
+    p34[addr] <= 1'b0; 
   else if(p34_write_updt)
-    p34 <= p34_write_updt_val;
+    p34[addr] <= p34_write_updt_val;
   else if(p34_read_updt)
-    p34 <= p34_read_updt_val;
+    p34[addr] <= p34_read_updt_val;
 end 
   
 //Path 35
@@ -777,11 +780,11 @@ assign p35_read_updt_val  = (hit_num_index[4:1] == 4'b1010);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p35 <= 1'b0; 
+    p35[addr] <= 1'b0; 
   else if(p35_write_updt)
-    p35 <= p35_write_updt_val;
+    p35[addr] <= p35_write_updt_val;
   else if(p35_read_updt)
-    p35 <= p35_read_updt_val;
+    p35[addr] <= p35_read_updt_val;
 end 
   
 //Path 36
@@ -796,11 +799,11 @@ assign p36_read_updt_val  = (hit_num_index[4:1] == 4'b1100);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p36 <= 1'b0; 
+    p36[addr] <= 1'b0; 
   else if(p36_write_updt)
-    p36 <= p36_write_updt_val;
+    p36[addr] <= p36_write_updt_val;
   else if(p36_read_updt)
-    p36 <= p36_read_updt_val;
+    p36[addr] <= p36_read_updt_val;
 end 
   
 //Path 37
@@ -815,11 +818,11 @@ assign p37_read_updt_val  = (hit_num_index[4:1] == 4'b1110);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p37 <= 1'b0; 
+    p37[addr] <= 1'b0; 
   else if(p37_write_updt)
-    p37 <= p37_write_updt_val;
+    p37[addr] <= p37_write_updt_val;
   else if(p37_read_updt)
-    p37 <= p37_read_updt_val;
+    p37[addr] <= p37_read_updt_val;
 end 
   
 //----------------------------------------------------------
@@ -837,11 +840,11 @@ assign p40_read_updt_val  = (hit_num_index[4:0] == 5'b00000);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p40 <= 1'b0;
+    p40[addr] <= 1'b0;
   else if(p40_write_updt)
-    p40 <= p40_write_updt_val;
+    p40[addr] <= p40_write_updt_val;
   else if(p40_read_updt)
-    p40 <= p40_read_updt_val;
+    p40[addr] <= p40_read_updt_val;
 end
 
 //Path 41
@@ -856,11 +859,11 @@ assign p41_read_updt_val  = (hit_num_index[4:0] == 5'b00010);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p41 <= 1'b0; 
+    p41[addr] <= 1'b0; 
   else if(p41_write_updt)
-    p41 <= p41_write_updt_val;
+    p41[addr] <= p41_write_updt_val;
   else if(p41_read_updt)
-    p41 <= p41_read_updt_val;
+    p41[addr] <= p41_read_updt_val;
 end
   
 //Path 42
@@ -875,11 +878,11 @@ assign p42_read_updt_val  = (hit_num_index[4:0] == 5'b00100);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p42 <= 1'b0; 
+    p42[addr] <= 1'b0; 
   else if(p42_write_updt)
-    p42 <= p42_write_updt_val;
+    p42[addr] <= p42_write_updt_val;
   else if(p42_read_updt)
-    p42 <= p42_read_updt_val;
+    p42[addr] <= p42_read_updt_val;
 end 
   
 //Path 43
@@ -894,11 +897,11 @@ assign p43_read_updt_val  = (hit_num_index[4:0] == 5'b00110);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p43 <= 1'b0; 
+    p43[addr] <= 1'b0; 
   else if(p43_write_updt)
-    p43 <= p43_write_updt_val;
+    p43[addr] <= p43_write_updt_val;
   else if(p43_read_updt)
-    p43 <= p43_read_updt_val;
+    p43[addr] <= p43_read_updt_val;
 end 
   
 //Path 44
@@ -913,11 +916,11 @@ assign p44_read_updt_val  = (hit_num_index[4:0] == 5'b01000);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p44 <= 1'b0; 
+    p44[addr] <= 1'b0; 
   else if(p44_write_updt)
-    p44 <= p44_write_updt_val;
+    p44[addr] <= p44_write_updt_val;
   else if(p44_read_updt)
-    p44 <= p44_read_updt_val;
+    p44[addr] <= p44_read_updt_val;
 end 
   
 //Path 45
@@ -932,11 +935,11 @@ assign p45_read_updt_val  = (hit_num_index[4:0] == 5'b01010);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p45 <= 1'b0; 
+    p45[addr] <= 1'b0; 
   else if(p45_write_updt)
-    p45 <= p45_write_updt_val;
+    p45[addr] <= p45_write_updt_val;
   else if(p45_read_updt)
-    p45 <= p45_read_updt_val;
+    p45[addr] <= p45_read_updt_val;
 end 
   
 //Path 46
@@ -951,11 +954,11 @@ assign p46_read_updt_val  = (hit_num_index[4:0] == 5'b01100);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p46 <= 1'b0; 
+    p46[addr] <= 1'b0; 
   else if(p46_write_updt)
-    p46 <= p46_write_updt_val;
+    p46[addr] <= p46_write_updt_val;
   else if(p46_read_updt)
-    p46 <= p46_read_updt_val;
+    p46[addr] <= p46_read_updt_val;
 end 
   
 //Path 47
@@ -970,11 +973,11 @@ assign p47_read_updt_val  = (hit_num_index[4:0] == 5'b01110);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p47 <= 1'b0; 
+    p47[addr] <= 1'b0; 
   else if(p47_write_updt)
-    p47 <= p47_write_updt_val;
+    p47[addr] <= p47_write_updt_val;
   else if(p47_read_updt)
-    p47 <= p47_read_updt_val;
+    p47[addr] <= p47_read_updt_val;
 end 
   
 //Path 48
@@ -989,11 +992,11 @@ assign p48_read_updt_val  = (hit_num_index[4:0] == 5'b10000);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p48 <= 1'b0;
+    p48[addr] <= 1'b0;
   else if(p48_write_updt)
-    p48 <= p48_write_updt_val;
+    p48[addr] <= p48_write_updt_val;
   else if(p48_read_updt)
-    p48 <= p48_read_updt_val;
+    p48[addr] <= p48_read_updt_val;
 end
 
 //Path 49
@@ -1008,11 +1011,11 @@ assign p49_read_updt_val  = (hit_num_index[4:0] == 5'b10010);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p49 <= 1'b0; 
+    p49[addr] <= 1'b0; 
   else if(p49_write_updt)
-    p49 <= p49_write_updt_val;
+    p49[addr] <= p49_write_updt_val;
   else if(p49_read_updt)
-    p49 <= p49_read_updt_val;
+    p49[addr] <= p49_read_updt_val;
 end
   
 //Path 4a
@@ -1027,11 +1030,11 @@ assign p4a_read_updt_val  = (hit_num_index[4:0] == 5'b10100);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p4a <= 1'b0; 
+    p4a[addr] <= 1'b0; 
   else if(p4a_write_updt)
-    p4a <= p4a_write_updt_val;
+    p4a[addr] <= p4a_write_updt_val;
   else if(p4a_read_updt)
-    p4a <= p4a_read_updt_val;
+    p4a[addr] <= p4a_read_updt_val;
 end 
   
 //Path 4b
@@ -1046,11 +1049,11 @@ assign p4b_read_updt_val  = (hit_num_index[4:0] == 5'b10110);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p4b <= 1'b0; 
+    p4b[addr] <= 1'b0; 
   else if(p4b_write_updt)
-    p4b <= p4b_write_updt_val;
+    p4b[addr] <= p4b_write_updt_val;
   else if(p4b_read_updt)
-    p4b <= p4b_read_updt_val;
+    p4b[addr] <= p4b_read_updt_val;
 end 
   
 //Path 4c
@@ -1065,11 +1068,11 @@ assign p4c_read_updt_val  = (hit_num_index[4:0] == 5'b11000);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p4c <= 1'b0; 
+    p4c[addr] <= 1'b0; 
   else if(p4c_write_updt)
-    p4c <= p4c_write_updt_val;
+    p4c[addr] <= p4c_write_updt_val;
   else if(p4c_read_updt)
-    p4c <= p4c_read_updt_val;
+    p4c[addr] <= p4c_read_updt_val;
 end 
   
 //Path 4d
@@ -1084,11 +1087,11 @@ assign p4d_read_updt_val  = (hit_num_index[4:0] == 5'b11010);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p4d <= 1'b0; 
+    p4d[addr] <= 1'b0; 
   else if(p4d_write_updt)
-    p4d <= p4d_write_updt_val;
+    p4d[addr] <= p4d_write_updt_val;
   else if(p4d_read_updt)
-    p4d <= p4d_read_updt_val;
+    p4d[addr] <= p4d_read_updt_val;
 end 
   
 //Path 4e
@@ -1103,11 +1106,11 @@ assign p4e_read_updt_val  = (hit_num_index[4:0] == 5'b11100);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p4e <= 1'b0; 
+    p4e[addr] <= 1'b0; 
   else if(p4e_write_updt)
-    p4e <= p4e_write_updt_val;
+    p4e[addr] <= p4e_write_updt_val;
   else if(p4e_read_updt)
-    p4e <= p4e_read_updt_val;
+    p4e[addr] <= p4e_read_updt_val;
 end 
   
 //Path 4f
@@ -1122,51 +1125,51 @@ assign p4f_read_updt_val  = (hit_num_index[4:0] == 5'b11110);
 always @(posedge lru_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
-    p4f <= 1'b0; 
+    p4f[addr] <= 1'b0; 
   else if(p4f_write_updt)
-    p4f <= p4f_write_updt_val;
+    p4f[addr] <= p4f_write_updt_val;
   else if(p4f_read_updt)
-    p4f <= p4f_read_updt_val;
+    p4f[addr] <= p4f_read_updt_val;
 end 
   
 //----------------------------------------------------------
 //                  uTLB Replacement Algorithm
 //----------------------------------------------------------
-assign plru_num[4] =  p00;
+assign plru_num[4] =  p00[addr];
 
-assign plru_num[3] = !p00 &&  p10
-                   || p00 &&  p11;
+assign plru_num[3] = !p00[addr] &&  p10[addr]
+                   || p00[addr] &&  p11[addr];
 
-assign plru_num[2] = !p00 && !p10 &&  p20
-                   ||!p00 &&  p10 &&  p21
-                   || p00 && !p11 &&  p22
-                   || p00 &&  p11 &&  p23;
+assign plru_num[2] = !p00[addr] && !p10[addr] &&  p20[addr]
+                   ||!p00[addr] &&  p10[addr] &&  p21[addr]
+                   || p00[addr] && !p11[addr] &&  p22[addr]
+                   || p00[addr] &&  p11[addr] &&  p23[addr];
 
-assign plru_num[1] = !p00 && !p10 && !p20 && p30
-                   ||!p00 && !p10 &&  p20 && p31
-                   ||!p00 &&  p10 && !p21 && p32
-                   ||!p00 &&  p10 &&  p21 && p33
-                   || p00 && !p11 && !p22 && p34
-                   || p00 && !p11 &&  p22 && p35
-                   || p00 &&  p11 && !p23 && p36
-                   || p00 &&  p11 &&  p23 && p37;
+assign plru_num[1] = !p00[addr] && !p10[addr] && !p20[addr] && p30[addr]
+                   ||!p00[addr] && !p10[addr] &&  p20[addr] && p31[addr]
+                   ||!p00[addr] &&  p10[addr] && !p21[addr] && p32[addr]
+                   ||!p00[addr] &&  p10[addr] &&  p21[addr] && p33[addr]
+                   || p00[addr] && !p11[addr] && !p22[addr] && p34[addr]
+                   || p00[addr] && !p11[addr] &&  p22[addr] && p35[addr]
+                   || p00[addr] &&  p11[addr] && !p23[addr] && p36[addr]
+                   || p00[addr] &&  p11[addr] &&  p23[addr] && p37[addr];
 
-assign plru_num[0] = !p00 && !p10 && !p20 && !p30 && p40
-                   ||!p00 && !p10 && !p20 &&  p30 && p41
-                   ||!p00 && !p10 &&  p20 && !p31 && p42
-                   ||!p00 && !p10 &&  p20 &&  p31 && p43
-                   ||!p00 &&  p10 && !p21 && !p32 && p44
-                   ||!p00 &&  p10 && !p21 &&  p32 && p45
-                   ||!p00 &&  p10 &&  p21 && !p33 && p46
-                   ||!p00 &&  p10 &&  p21 &&  p33 && p47
-                   ||!p00 && !p11 && !p22 && !p34 && p48
-                   ||!p00 && !p11 && !p22 &&  p34 && p49
-                   ||!p00 && !p11 &&  p22 && !p35 && p4a
-                   ||!p00 && !p11 &&  p22 &&  p35 && p4b
-                   ||!p00 &&  p11 && !p23 && !p36 && p4c
-                   ||!p00 &&  p11 && !p23 &&  p36 && p4d
-                   ||!p00 &&  p11 &&  p23 && !p37 && p4e
-                   ||!p00 &&  p11 &&  p23 &&  p37 && p4f;
+assign plru_num[0] = !p00[addr] && !p10[addr] && !p20[addr] && !p30[addr] && p40[addr]
+                   ||!p00[addr] && !p10[addr] && !p20[addr] &&  p30[addr] && p41[addr]
+                   ||!p00[addr] && !p10[addr] &&  p20[addr] && !p31[addr] && p42[addr]
+                   ||!p00[addr] && !p10[addr] &&  p20[addr] &&  p31[addr] && p43[addr]
+                   ||!p00[addr] &&  p10[addr] && !p21[addr] && !p32[addr] && p44[addr]
+                   ||!p00[addr] &&  p10[addr] && !p21[addr] &&  p32[addr] && p45[addr]
+                   ||!p00[addr] &&  p10[addr] &&  p21[addr] && !p33[addr] && p46[addr]
+                   ||!p00[addr] &&  p10[addr] &&  p21[addr] &&  p33[addr] && p47[addr]
+                   ||!p00[addr] && !p11[addr] && !p22[addr] && !p34[addr] && p48[addr]
+                   ||!p00[addr] && !p11[addr] && !p22[addr] &&  p34[addr] && p49[addr]
+                   ||!p00[addr] && !p11[addr] &&  p22[addr] && !p35[addr] && p4a[addr]
+                   ||!p00[addr] && !p11[addr] &&  p22[addr] &&  p35[addr] && p4b[addr]
+                   ||!p00[addr] &&  p11[addr] && !p23[addr] && !p36[addr] && p4c[addr]
+                   ||!p00[addr] &&  p11[addr] && !p23[addr] &&  p36[addr] && p4d[addr]
+                   ||!p00[addr] &&  p11[addr] &&  p23[addr] && !p37[addr] && p4e[addr]
+                   ||!p00[addr] &&  p11[addr] &&  p23[addr] &&  p37[addr] && p4f[addr];
 
 // &ModuleEnd; @864
 endmodule

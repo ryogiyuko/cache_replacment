@@ -25,7 +25,7 @@ module LRU_buffer(
     input [7:0] i_hit_way_8,//命中哪一行
     //input i_lru_write_enable, 
     input i_hit_sig,//是否命中
-    output [2:0] buffer_out0,buffer_out1,buffer_out2,buffer_out3,buffer_out4,buffer_out5,buffer_out6,buffer_out7,
+    output [2:0] buffer_out0,buffer_out1,buffer_out2,buffer_out3,buffer_out4,buffer_out5,buffer_out6,
     output [7:0] out_lru_flag,  //onehot 哪个行是最LRU的
     input [6:0] i_addr_7 //七位地址寻址128行
 );
