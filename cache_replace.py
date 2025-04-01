@@ -1,6 +1,6 @@
 # 打开文件并读取数据
-read_file_path = "inst.txt"  # 替换为你的文件路径
-out_file_path = "output.txt"
+read_file_path = "/public/zjy/memoryAddress.txt"  # 替换为你的文件路径
+out_file_path = "/public/zjy/output.txt"
 
 rows = 128
 cols = 8
@@ -14,6 +14,7 @@ lru = [[0 for _ in range(cols)] for _ in range(rows)]
 with open(read_file_path, "r", encoding="utf-8") as file:
     for line in file:
         number = int(line.strip(),2)
+        #print(number)
         numbers.append(number)
 
 loadstore = [] #1是，0不是
@@ -37,7 +38,7 @@ def lru_hit(hit_num, addr_index):#命中哪一行，第几组
     hit_lrunum = lru_p_state[i]
 
     #更新，相等的变MRU（lru位=0）,小于的+1，大于的不变
-    for i in len(lru_p_state):
+    for i in range(len(lru_p_state)):
         if lru_p_state[i] == hit_lrunum:
             lru[addr_index][i] = 0
         elif lru_p_state[i] < hit_lrunum:
@@ -48,7 +49,7 @@ def lru_miss(addr_index, addr_tag):#第几组，缺失写入的tag
     lru_p_state = lru[addr_index]
     
     #更新，等于7的变MRU（lru位=0）,其他的+1；新tag写入
-    for i in len(lru_p_state):
+    for i in range(len(lru_p_state)):
         if lru_p_state[i]==7:
             tag[addr_index][i] = addr_tag
             lru[addr_index][i] = 0
@@ -56,16 +57,18 @@ def lru_miss(addr_index, addr_tag):#第几组，缺失写入的tag
             lru[addr_index][i] = lru_p_state[i]+1
 
 lenth = len(numbers)
-for line in lenth:
-    if line != 0 and number[line] == 0:
-        hit_num_32B.append(0)
+for line in range(lenth):
+    if line != 0 and numbers[line] == 0:
+        a = [0 for _ in range(cols)]
+        hit_num_32B.append(a)
         index_out_32B.append(0)
         hit_32B.append(hit)
         loadstore.append(0)
         continue
 
-    addr_32B = number[line] >> 5
+    addr_32B = numbers[line] >> 5
     Index_32B = addr_32B % 128
+    print(addr_32B,Index_32B)
     tag_32B = addr_32B / 128
 
     hit = 0
@@ -97,8 +100,10 @@ for line in lenth:
     hit_32B.append(hit)
     loadstore.append(1)
 
+binary_strings = [''.join(map(str, sublist)) for sublist in hit_num_32B]
+
 with open(out_file_path, "w", encoding="utf-8") as file:
-    for x,y,hit_num,index in (loadstore, hit_32B, hit_32B, hit_num_32B, index_out_32B):
+    for x,y,hit_num,index in zip(loadstore, hit_32B, binary_strings, index_out_32B):
         file.write(f"{x} {y} {hit_num} {index}\n")
     
 print(f"数据已写入文件 {out_file_path}")

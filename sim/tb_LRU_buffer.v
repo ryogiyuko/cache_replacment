@@ -83,18 +83,22 @@ begin
 
     i_hit_way_8 = 8'b00100000;
     i_hit_sig = 1;
+    i_addr_7 = 7'd13;
     #run_time;
 
     i_hit_way_8 = 8'b00000001;
     i_hit_sig = 1;
+    i_addr_7 = 7'd12;
     #run_time;
 
     i_hit_way_8 = 8'b00000100;
     i_hit_sig = 1;
+    i_addr_7 = 7'd13;
     #run_time;
 
     i_hit_way_8 = 8'b00000000;
     i_hit_sig = 0;
+    i_addr_7 = 7'd12;
     #run_time;
 
     $toggle_stop;
