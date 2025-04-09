@@ -59,11 +59,12 @@ def lru_miss(addr_index, addr_tag):#第几组，缺失写入的tag
 lenth = len(numbers)
 for line in range(lenth):
     if line != 0 and numbers[line] == 0:
-        a = [0 for _ in range(cols)]
-        hit_num_32B.append(a)
+        a1 = [0 for _ in range(cols)]
+        hit_num_32B.append(a1)
         index_out_32B.append(0)
-        hit_32B.append(hit)
+        hit_32B.append(0)
         loadstore.append(0)
+        print(0,0)
         continue
 
     addr_32B = numbers[line] >> 5
@@ -82,6 +83,9 @@ for line in range(lenth):
             break
     
     if hit==0:
+        a1 = [0 for _ in range(cols)]
+        hit_num_32B.append(a1)
+        index_out_32B.append(0)
         #检查是否有valid为0，有则直接写入
         flag=0
         for i in range(8):

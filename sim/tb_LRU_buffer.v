@@ -28,11 +28,6 @@ wire  [7:0]  out_lru_flag                  ;
 
 initial
 begin
-    $sdf_annotate("/team/asc/zhong.jingye/zhongjingye/cache_replacement/DC/lru_buffer_40/output/LRU_buffer.sdf",u_LRU_buffer); 
-end
-
-initial
-begin
     forever #(PERIOD/2)  clk=~clk;
 end 
 
@@ -54,7 +49,7 @@ end
 // );
 
 LRU_buffer  u_LRU_buffer (
-    .clk                     ( clk                 ),
+    .clk                     ( clk  &  i_lru_write_enable          ),
     .rst                     ( rst                 ),
     .i_hit_way_8             ( i_hit_way_8   [7:0] ),
     .i_hit_sig               ( i_hit_sig           ),
@@ -71,35 +66,58 @@ LRU_buffer  u_LRU_buffer (
     .out_lru_flag            ( out_lru_flag  [7:0] )
 );
 
+integer file_ptr;
+integer line_count, cnt;
+reg [10000-1:0] loadstore, hit_sig;
+reg [8-1:0] hit_way_8 [10000-1:0];
+reg [7-1:0] addr_7 [10000-1:0];
+
 initial
 begin
-    $set_toggle_region (u_LRU_buffer);
-    $toggle_start();
+    $sdf_annotate("/team/asc/zhong.jingye/zhongjingye/cache_replacement/DC/lru_buffer_40/output/LRU_buffer.sdf",u_LRU_buffer); 
+    
+    $vcdpluson;
+
+    file_ptr = $fopen("/public/zjy/output/500.txt","r");
 
     #5; rst = 0;
     #(PERIOD*rst_cycle-5);
-
     #(PERIOD*rst_cycle) rst  =  1;
 
-    i_hit_way_8 = 8'b00100000;
-    i_hit_sig = 1;
-    i_addr_7 = 7'd13;
-    #run_time;
+    $set_toggle_region (u_LRU_buffer);
+    $toggle_start();
 
-    i_hit_way_8 = 8'b00000001;
-    i_hit_sig = 1;
-    i_addr_7 = 7'd12;
-    #run_time;
+    for (line_count=0; line_count<10000 ;line_count=line_count+1 ) begin
+        loadstore[line_count] = 0;
+        hit_sig[line_count] = 0;
+        hit_way_8[line_count] = 0;
+        addr_7[line_count] = 0; 
+    end
 
-    i_hit_way_8 = 8'b00000100;
-    i_hit_sig = 1;
-    i_addr_7 = 7'd13;
-    #run_time;
+    line_count = 0;
+    while (!$feof(file_ptr)) begin
+        // 将十进制值赋给 reg 类型变量，自动转换为二进制
+        $fscanf(file_ptr, "%d %d %b %d",loadstore[line_count], hit_sig[line_count], hit_way_8[line_count], addr_7[line_count]);
+        $display("%d %d %b %d",loadstore[line_count], hit_sig[line_count], hit_way_8[line_count], addr_7[line_count]);
+        line_count=line_count+1;
+    end
 
-    i_hit_way_8 = 8'b00000000;
-    i_hit_sig = 0;
-    i_addr_7 = 7'd12;
-    #run_time;
+
+    cnt=0;
+
+    while (cnt<line_count) begin
+        i_lru_write_enable =  loadstore[cnt]; 
+        i_hit_sig = hit_sig[cnt]; 
+        i_addr_7 = addr_7[cnt];
+        if (i_lru_write_enable) begin
+            i_hit_way_8 = hit_way_8[cnt];
+            // i_addr_7 = addr_7[cnt];
+            #run_time;
+        end
+        
+
+        cnt=cnt+1;     
+    end
 
     $toggle_stop;
     $toggle_report ("LRU_buffer_rtl.saif",1.0e-9,"u_LRU_buffer");

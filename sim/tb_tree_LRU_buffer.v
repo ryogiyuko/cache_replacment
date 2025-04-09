@@ -5,14 +5,15 @@ module tb_tree_LRU_buffer;
 // tree_LRU_buffer Parameters
 parameter PERIOD    = 10;
 parameter rst_cycle  = 30;
-parameter run_time  = 10;      
+parameter run_time  = 25;      
 
 
 // tree_LRU_buffer Inputs
 reg   rst                                  = 1 ;
 reg   i_drive_treeLRU                      = 0 ;
 reg   i_freeNext                           = 0 ;
-reg   [6:0]  i_hit_way_7                   = 0 ;
+reg   [7:0]  i_hit_way_7                   = 0 ;
+reg   i_lru_write_enable                   = 1 ;
 reg   i_hit_sig                            = 0 ;
 reg   [6:0]  i_addr_7                      = 0 ;
 
@@ -27,11 +28,6 @@ wire  [2:0]  buffer_out4                   ;
 wire  [2:0]  buffer_out5                   ;
 wire  [2:0]  buffer_out6                   ;
 wire  [2:0]  buffer_out7                   ;
-
-initial
-begin
-    $sdf_annotate("/team/asc/zhong.jingye/zhongjingye/cache_replacement/DC/tree_lru_buffer_40/output/tree_LRU_buffer.sdf",u_tree_LRU_buffer); 
-end
 
 tree_LRU_buffer  u_tree_LRU_buffer (
     .rst                     ( rst                    ),
@@ -49,156 +45,72 @@ tree_LRU_buffer  u_tree_LRU_buffer (
     .buffer_out3             ( buffer_out3      [2:0] ),
     .buffer_out4             ( buffer_out4      [2:0] ),
     .buffer_out5             ( buffer_out5      [2:0] ),
-    .buffer_out6             ( buffer_out6      [2:0] ),
-    .buffer_out7             ( buffer_out7      [2:0] )
+    .buffer_out6             ( buffer_out6      [2:0] )
+    //.buffer_out7             ( buffer_out7      [2:0] )
 );
+
+integer file_ptr;
+integer line_count, cnt;
+reg [10000-1:0] loadstore, hit_sig;
+reg [8-1:0] hit_way_8 [10000-1:0];
+reg [7-1:0] addr_7 [10000-1:0];
 
 initial
 begin
-     #5; rst = 0;
+    $sdf_annotate("/team/asc/zhong.jingye/zhongjingye/cache_replacement/DC/tree_lru_buffer_40/output/tree_LRU_buffer.sdf",u_tree_LRU_buffer); 
+    
+    $vcdpluson;
+
+    file_ptr = $fopen("/public/zjy/output/500.txt","r");
+
+    #5; rst = 0;
     #(PERIOD*rst_cycle-5);
     #(PERIOD*rst_cycle) rst  =  1;
 
-    //1
-    i_addr_7 = 7'b0000101;
-    #2.5;i_drive_treeLRU = 1'b1;
-    #2.5;i_drive_treeLRU = 1'b0;
+    $set_toggle_region (u_tree_LRU_buffer);
+    $toggle_start();
+    
+    for (line_count=0; line_count<10000 ;line_count=line_count+1 ) begin
+        loadstore[line_count] = 0;
+        hit_sig[line_count] = 0;
+        hit_way_8[line_count] = 0;
+        addr_7[line_count] = 0; 
+    end
 
-    #50;
+    line_count = 0;
+    while (!$feof(file_ptr)) begin
+        // 将十进制值赋给 reg 类型变量，自动转换为二进制
+        $fscanf(file_ptr, "%d %d %b %d",loadstore[line_count], hit_sig[line_count], hit_way_8[line_count], addr_7[line_count]);
+        $display("%d %d %b %d",loadstore[line_count], hit_sig[line_count], hit_way_8[line_count], addr_7[line_count]);
+        line_count=line_count+1;
+    end
 
-    #2.5;i_freeNext = 1'b1;
-    #2.5;i_freeNext = 1'b0;
+    cnt=0;
 
-    //2
-    #2.5;i_drive_treeLRU = 1'b1;
-    #2.5;i_drive_treeLRU = 1'b0;
+    while (cnt<line_count) begin
+        i_lru_write_enable =  loadstore[cnt]; 
+        i_hit_sig = hit_sig[cnt]; 
+        i_addr_7 = addr_7[cnt];
+        if (i_lru_write_enable) begin
+            if (hit_way_8[cnt][7]) begin
+                i_hit_way_7 = {1'b0,hit_way_8[cnt][5:0]};
+            end
+            else i_hit_way_7 = hit_way_8[cnt][6:0];
+            // i_addr_7 = addr_7[cnt];
+        end
+        #2.5;i_drive_treeLRU = 1'b1;
+        #2.5;i_drive_treeLRU = 1'b0;
+        #run_time;
+        #2.5;i_freeNext = 1'b1;
+        #2.5;i_freeNext = 1'b0;
+        cnt = cnt+1;
+    end
 
-    #50;
+    $toggle_stop;
+    $toggle_report ("Tree_LRU_buffer_rtl.saif",1.0e-9,"u_tree_LRU_buffer");
 
-    #2.5;i_freeNext = 1'b1;
-    #2.5;i_freeNext = 1'b0;
-
-    /*//test2 hit:1 output:8'bz0000100    
-    #20;
-    i_hit_sig=1'b1;
-    i_hit_way_7=7'b0000010;
-    i_addr_7=7'h8;
-
-//test3 hit:2 output:8'bz0001000    
-    #20;
-    i_hit_sig=1'b1;
-    i_hit_way_7=7'b0000100;
-    i_addr_7=7'h8;
-
-//test4 hit:3 output:8'bz0001000 	
-    #20;
-    i_hit_sig=1'b1;
-    i_hit_way_7=7'b0001000;
-    i_addr_7=7'hf;
-
-//test5 hit:4 output:8'bz0010000 
-    #20;
-    i_hit_sig=1'b1;
-    i_hit_way_7=7'b0010000;
-    i_addr_7=7'hf;
-
-//test6 hit:5 output:8'bz0100000 
-    #20;
-    i_hit_sig=1'b1;
-    i_hit_way_7=7'b0100000;
-    i_addr_7=7'hf;
-
-//test7 hit:6 output:8'bz0000000 
-    #20;
-    i_hit_sig=1'b1;
-    i_hit_way_7=7'b1000000;
-    i_addr_7=7'hf;
-
-
-//test8 hit:0 output:8'bz0000000 
-    #20;
-    i_hit_sig=1'b1;
-    i_hit_way_7=7'b0000001;
-    i_addr_7=7'h18;
-
-//test9 hit:no output:8'bz0000010 
-    #20;
-    i_hit_sig=1'b0;
-    i_hit_way_7=7'b0000000;
-    i_addr_7=7'h18;
-
-//test10 hit:no output:8'bz0000110 
-    #20;
-    i_hit_sig=1'b0;
-    i_hit_way_7=7'b0000000;
-    i_addr_7=7'h18;
-
-
-//test11 hit:3 output:8'bz0000110 
-    #20;
-    i_hit_sig=1'b1;
-    i_hit_way_7=7'b0001000;
-    i_addr_7=7'h18;
-
-//test12 hit:1 output:8'bz0010100 
-    #20;
-    i_hit_sig=1'b1;
-    i_hit_way_7=7'b0000010;
-    i_addr_7=7'h188;
-
-//test13 hit:no output:8'bz0110100 
-    #20;
-    i_hit_sig=1'b0;
-    i_hit_way_7=7'b0000000;
-    i_addr_7=7'h188;
-
-
-//test14 hit:no output:8'bz1110100 
-    #20;
-    i_hit_sig=1'b0;
-    i_hit_way_7=7'b0000000;
-    i_addr_7=7'h188;
-
-
-//test15 hit:6 output:8'bz0110101 
-    #20;
-    i_hit_sig=1'b1;
-    i_hit_way_7=8'b1000000;
-    i_addr_7=7'h188;
-
-//test16 hit:2 output:8'bz0110001 
-    #20;
-    i_hit_sig=1'b1;
-    i_hit_way_7=7'b0000100;
-    i_addr_7=7'h118;
-
-
-//test17 hit:no output:8'bz0110001 
-    #20;
-    i_hit_sig=1'b0;
-    i_hit_way_7=7'b0000000;
-    i_addr_7=7'h118;
-
-//test18 hit:no output:8'bz0111001 
-    #20;
-    i_hit_sig=1'b0;
-    i_hit_way_7=7'b0000000;
-    i_addr_7=7'h118;
-//test19 hit:no output:8'bz0111011 
-    #20;
-    i_hit_sig=1'b0;
-    i_hit_way_7=7'b0000000;
-    i_addr_7=7'h118;
-
-//test20 hit:1 output:8'bz0111001 
-    #20;
-    i_hit_sig=1'b1;
-    i_hit_way_7=7'b0000010;
-    i_addr_7=7'h118;
-*/
-
-    #200;
     $stop;
+    $finish;
 end
 
 endmodule
