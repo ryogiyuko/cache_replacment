@@ -5,7 +5,7 @@ module tb_LRU_buffer;
 // LRU Parameters
 parameter PERIOD    = 10;
 parameter rst_cycle  = 30;
-parameter run_time  = 10;
+parameter run_time  = 5;
 
 // LRU Inputs
 reg   clk                                  = 0 ;
@@ -78,7 +78,17 @@ begin
     
     $vcdpluson;
 
-    file_ptr = $fopen("/public/zjy/output/500.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/500.txt","r");
+    file_ptr = $fopen("/public/zjy/output/502.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/505.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/520.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/523.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/525.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/531.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/541.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/548.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/557.txt","r");
+
 
     #5; rst = 0;
     #(PERIOD*rst_cycle-5);
@@ -109,13 +119,12 @@ begin
         i_lru_write_enable =  loadstore[cnt]; 
         i_hit_sig = hit_sig[cnt]; 
         i_addr_7 = addr_7[cnt];
-        if (i_lru_write_enable) begin
+        if (i_lru_write_enable) begin   
+            // i_addr_7 = addr_7[cnt]
             i_hit_way_8 = hit_way_8[cnt];
-            // i_addr_7 = addr_7[cnt];
             #run_time;
         end
         
-
         cnt=cnt+1;     
     end
 

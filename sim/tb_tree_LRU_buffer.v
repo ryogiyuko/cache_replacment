@@ -5,7 +5,7 @@ module tb_tree_LRU_buffer;
 // tree_LRU_buffer Parameters
 parameter PERIOD    = 10;
 parameter rst_cycle  = 30;
-parameter run_time  = 25;      
+parameter run_time  = 5;      
 
 
 // tree_LRU_buffer Inputs
@@ -61,7 +61,16 @@ begin
     
     $vcdpluson;
 
-    file_ptr = $fopen("/public/zjy/output/500.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/500.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/502.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/505.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/520.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/523.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/525.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/531.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/541.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/548.txt","r");
+    file_ptr = $fopen("/public/zjy/output/557.txt","r");
 
     #5; rst = 0;
     #(PERIOD*rst_cycle-5);
@@ -97,12 +106,12 @@ begin
             end
             else i_hit_way_7 = hit_way_8[cnt][6:0];
             // i_addr_7 = addr_7[cnt];
+            #2.5;i_drive_treeLRU = 1'b1;
+            #2.5;i_drive_treeLRU = 1'b0;
+            #run_time;
+            #2.5;i_freeNext = 1'b1;
+            #2.5;i_freeNext = 1'b0;
         end
-        #2.5;i_drive_treeLRU = 1'b1;
-        #2.5;i_drive_treeLRU = 1'b0;
-        #run_time;
-        #2.5;i_freeNext = 1'b1;
-        #2.5;i_freeNext = 1'b0;
         cnt = cnt+1;
     end
 
