@@ -128,7 +128,17 @@ begin
     $sdf_annotate("/team/asc/zhong.jingye/zhongjingye/cache_replacement/DC/asy_plru_40/output/plru.sdf",u_plru); 
     $vcdpluson;
 
-    file_ptr = $fopen("/public/zjy/output/500.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/500.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/502.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/505.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/520.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/523.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/525.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/531.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/541.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/548.txt","r");
+    file_ptr = $fopen("/public/zjy/output/557.txt","r");
+
 
     #5; cpurst_b = 0;
     #(PERIOD*rst_cycle-5);
@@ -144,8 +154,6 @@ begin
         addr_7[line_count] = 0; 
     end
 
-    mod4 = 0;
-    line_count = 0;
     {entry31_vld, entry30_vld, entry29_vld, entry28_vld,
         entry27_vld, entry26_vld, entry25_vld, entry24_vld,
         entry23_vld, entry22_vld, entry21_vld, entry20_vld,
@@ -155,6 +163,8 @@ begin
         entry7_vld,  entry6_vld,  entry5_vld,  entry4_vld,
         entry3_vld,  entry2_vld,  entry1_vld,  entry0_vld} = {DATA_WIDTH{1'b1}};
     
+    line_count = 0;    
+    
     while (!$feof(file_ptr)) begin 
         // 将十进制值赋给 reg 类型变量，自动转换为二进制
         $fscanf(file_ptr, "%d %d %b %d",loadstore[line_count], hit_sig[line_count], hit_way_8[line_count], addr_7[line_count]);
@@ -162,6 +172,7 @@ begin
         line_count=line_count+1;
     end
     
+    mod4 = 0;
     cnt=0;
 
     while (cnt<line_count) begin
@@ -176,9 +187,9 @@ begin
         end
         
         if (loadstore[cnt]) begin
-            if (hit_sig[line_count]) begin
+            if (hit_sig[cnt]) begin
                 utlb_plru_read_hit_vld = 1'b1;
-                utlb_plru_read_hit[(mod4+1)*8-1-:8] = hit_way_8[line_count];
+                utlb_plru_read_hit[(mod4+1)*8-1-:8] = hit_way_8[cnt];
             
                 #2.5;i_drive_hit = 1'b1;
                 #2.5;i_drive_hit = 1'b0;
@@ -187,6 +198,8 @@ begin
                 #2.5;i_freeNext_end = 1'b0;
             end
             else begin
+                utlb_plru_refill_on = 1;
+                utlb_plru_refill_vld = 1;
                 #2.5;i_drive_miss = 1'b1;
                 #2.5;i_drive_miss = 1'b0;
                 #run_time;

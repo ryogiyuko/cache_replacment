@@ -111,20 +111,29 @@ reg [10000-1:0] loadstore, hit_sig;
 reg [8-1:0] hit_way_8 [10000-1:0];
 reg [7-1:0] addr_7 [10000-1:0];
 integer mod4;
-
+reg r_hit_sig = 0;
 
 initial
 begin
     $sdf_annotate("/team/asc/zhong.jingye/zhongjingye/cache_replacement/DC/xuantie_plru_40/output/ct_mmu_iplru.sdf",u_ct_mmu_iplru); 
     $vcdpluson;
 
-    file_ptr = $fopen("/public/zjy/output/500.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/500.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/502.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/505.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/520.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/523.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/525.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/531.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/541.txt","r");
+    // file_ptr = $fopen("/public/zjy/output/548.txt","r");
+    file_ptr = $fopen("/public/zjy/output/557.txt","r");
 
     #5; cpurst_b = 0;
     #(PERIOD*rst_cycle-5);
     #(PERIOD*rst_cycle) cpurst_b  =  1;
 
-    $set_toggle_region (u_plru);
+    $set_toggle_region (u_ct_mmu_iplru);
     $toggle_start();
 
     for (line_count=0; line_count<10000 ;line_count=line_count+1 ) begin
@@ -134,8 +143,6 @@ begin
         addr_7[line_count] = 0; 
     end
 
-    mod4 = 0;
-    line_count = 0;
     {entry31_vld, entry30_vld, entry29_vld, entry28_vld,
         entry27_vld, entry26_vld, entry25_vld, entry24_vld,
         entry23_vld, entry22_vld, entry21_vld, entry20_vld,
@@ -145,6 +152,7 @@ begin
         entry7_vld,  entry6_vld,  entry5_vld,  entry4_vld,
         entry3_vld,  entry2_vld,  entry1_vld,  entry0_vld} = {DATA_WIDTH{1'b1}};
     
+    line_count = 0;
     while (!$feof(file_ptr)) begin 
         // 将十进制值赋给 reg 类型变量，自动转换为二进制
         $fscanf(file_ptr, "%d %d %b %d",loadstore[line_count], hit_sig[line_count], hit_way_8[line_count], addr_7[line_count]);
@@ -152,11 +160,14 @@ begin
         line_count=line_count+1;
     end
     
+    mod4 = 0;
     cnt=0;
 
     while (cnt<line_count) begin
         utlb_plru_read_hit = 0;
         utlb_plru_read_hit_vld = 0;
+        utlb_plru_refill_on = 0;
+        utlb_plru_refill_vld = 0;
 
         if (mod4<3) begin
             mod4=mod4+1;
@@ -165,15 +176,23 @@ begin
             mod4 = 0;
         end
         
+        
+        r_hit_sig = hit_sig[cnt];
+
         if (loadstore[cnt]) begin
-            if (hit_sig[line_count]) begin
+            if (r_hit_sig) begin
                 utlb_plru_read_hit_vld = 1'b1;
-                utlb_plru_read_hit[(mod4+1)*8-1-:8] = hit_way_8[line_count]; 
+                utlb_plru_read_hit[(mod4+1)*8-1-:8] = hit_way_8[cnt]; 
                 #run_time;
             end
             else begin
+                utlb_plru_refill_on = 1;
+                utlb_plru_refill_vld = 1;
                 #run_time;
             end
+        end
+        else begin
+             #(run_time);
         end
 
         cnt = cnt+1;
@@ -181,7 +200,7 @@ begin
 
 
     $toggle_stop;
-    $toggle_report ("plru.saif",1.0e-9,"u_plru");
+    $toggle_report ("plru.saif",1.0e-9,"u_ct_mmu_iplru");
 
     $stop;
     $finish;
